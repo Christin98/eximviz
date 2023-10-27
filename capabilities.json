@@ -1,0 +1,89 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Columns",
+      "name": "Columns",
+      "kind": "GroupingOrMeasure"
+    },
+    {
+      "displayName": "Rows",
+      "name": "Rows",
+      "kind": "GroupingOrMeasure"
+    },
+    {
+      "displayName": "Values",
+      "name": "Values",
+      "kind": "Measure"
+    }
+  ],
+  "objects": {
+    "circle": {
+      "displayName": "Circle",
+      "properties": {
+        "circleColor": {
+          "displayName": "Color",
+          "description": "The fill color of the circle.",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "circleThickness": {
+          "displayName": "Thickness",
+          "description": "The circle thickness.",
+          "type": {
+            "numeric": true
+          }
+        }
+      }
+    },
+    "grid": {
+      "displayName": "Grid",
+      "properties": {
+        "gridKey": {
+          "displayName": "Key",
+          "description": "ag-Grid Enterprise License Key.",
+          "type": {
+            "text": true
+          }
+        },
+        "gridFilter": {
+          "displayName": "Filter",
+          "description": "ag-Grid Column Header Filters.",
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    }
+  },
+  "dataViewMappings": [
+    {
+      "conditions": [],
+      "table": {
+        "rows": {
+          "select": [
+            {
+              "for": {
+                "in": "Columns"
+              }
+            }
+          ]
+        },
+        "columns": {
+          "select": [
+            {
+              "for": {
+                "in": "Rows"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "privileges": []
+}
