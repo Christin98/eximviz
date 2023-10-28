@@ -48,7 +48,6 @@ import 'ag-grid-enterprise'
 import { ExcelExportModule } from 'ag-grid-enterprise';
 import { VisualSettings } from './settings';
 import { LicenseManager } from 'ag-grid-enterprise';
-import { blob } from 'd3';
 
 // import { VisualFormattingSettingsModel } from "./settings";
 
@@ -135,12 +134,6 @@ const defaultGridConfig = {
     onGridReady: ({api}) => api.sizeColumnsToFit(),
 } as GridOptions;
 
-class GridApi {
-    private paginationProxy: true;
-    getPaginationProxy(): true {
-        return this.paginationProxy;
-    }
-}
 export class Visual implements IVisual {
     // private target: HTMLElement;
     // private updateCount: number;
@@ -153,9 +146,9 @@ export class Visual implements IVisual {
     private readonly element: HTMLElement;
     private gridOptions: GridOptions;
     private button: HTMLButtonElement;
-    private gridApi: GridApi;
 
-    constructor(options: VisualConstructorOptions,gridApi: GridApi) {
+
+    constructor(options: VisualConstructorOptions) {
         // console.log('Visual constructor', options);
         // this.tableElement = document.createElement("table");
         // options.element.appendChild(this.tableElement);
@@ -176,16 +169,19 @@ export class Visual implements IVisual {
     this.element.classList.add('ag-theme-balham');
     this.button = document.createElement("button");
     this.button.innerText = "Click Me";
-    this.gridApi = gridApi;
     this.button.addEventListener('click', () => {
         this.onButtonClick();
     });
     this.element.appendChild(this.button);
     }
 
-  
+
+    
     private onButtonClick() {
         // Handle the button click event here
+
+        console.log('button clicked!')
+
         // const exportParams = {
         //     skipHeader: false,
         //     columnGroups: true,
@@ -199,7 +195,7 @@ export class Visual implements IVisual {
         // Add custom logic to interact with the data or update the visualization.
         // this.gridOptions.api.showLoadingOverlay()
 
-        
+        const content = this.gridOptions.api!.getDataAsExcel()
     }
 
     public update(options: VisualUpdateOptions) {
