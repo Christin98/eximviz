@@ -11,6 +11,5 @@ export declare class Visual implements IVisual {
     private gridOptions;
     private button;
     constructor(options: VisualConstructorOptions);
-    private onButtonClick;
     update(options: VisualUpdateOptions): void;
 }
