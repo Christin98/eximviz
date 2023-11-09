@@ -1,18 +1,13 @@
 {
   "dataRoles": [
     {
-      "displayName": "Columns",
-      "name": "Columns",
-      "kind": "GroupingOrMeasure"
+      "displayName": "Column",
+      "name": "column",
+      "kind": "Grouping"
     },
     {
-      "displayName": "Rows",
-      "name": "Rows",
-      "kind": "GroupingOrMeasure"
-    },
-    {
-      "displayName": "Values",
-      "name": "Values",
+      "displayName": "Value",
+      "name": "value",
       "kind": "Measure"
     }
   ],
@@ -68,22 +63,36 @@
           "select": [
             {
               "for": {
-                "in": "Columns"
+                "in": "column"
               }
-            }
-          ]
-        },
-        "columns": {
-          "select": [
+            },
             {
               "for": {
-                "in": "Rows"
+                "in": "value"
               }
             }
-          ]
+          ],
+          "dataReductionAlgorithm": {
+            "window": {
+              "count": 200000
+            }
+          }
         }
       }
     }
   ],
-  "privileges": []
+  "supportsLandingPage": true,
+  "supportsEmptyDataView": true,
+  "suppressDefaultTitle": true,
+  "privileges": [ 
+    {
+      "name": "ExportContent"
+    },
+    {
+      "name": "WebAccess",
+      "parameters": [
+        "*"
+      ]
+    }
+  ]
 }
