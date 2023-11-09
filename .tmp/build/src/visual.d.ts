@@ -10,6 +10,7 @@ export declare class Visual implements IVisual {
     private readonly element;
     private gridOptions;
     private button;
+    private downloadservice;
     constructor(options: VisualConstructorOptions);
     update(options: VisualUpdateOptions): void;
 }

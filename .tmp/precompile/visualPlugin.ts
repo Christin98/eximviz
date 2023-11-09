@@ -5,11 +5,11 @@ import VisualConstructorOptions = powerbiVisualsApi.extensibility.visual.VisualC
 import DialogConstructorOptions = powerbiVisualsApi.extensibility.visual.DialogConstructorOptions;
 var powerbiKey: any = "powerbi";
 var powerbi: any = window[powerbiKey];
-var EximTableViz9019D4275A2B4124B398FEE443B05F9F: IVisualPlugin = {
-    name: 'EximTableViz9019D4275A2B4124B398FEE443B05F9F',
+var EximTableViz9019D4275A2B4124B398FEE443B05F9F_DEBUG: IVisualPlugin = {
+    name: 'EximTableViz9019D4275A2B4124B398FEE443B05F9F_DEBUG',
     displayName: 'EximTableViz',
     class: 'Visual',
-    apiVersion: '5.3.0',
+    apiVersion: '5.4.0',
     create: (options?: VisualConstructorOptions) => {
         if (Visual) {
             return new Visual(options);
@@ -27,6 +27,6 @@ var EximTableViz9019D4275A2B4124B398FEE443B05F9F: IVisualPlugin = {
 if (typeof powerbi !== "undefined") {
     powerbi.visuals = powerbi.visuals || {};
     powerbi.visuals.plugins = powerbi.visuals.plugins || {};
-    powerbi.visuals.plugins["EximTableViz9019D4275A2B4124B398FEE443B05F9F"] = EximTableViz9019D4275A2B4124B398FEE443B05F9F;
+    powerbi.visuals.plugins["EximTableViz9019D4275A2B4124B398FEE443B05F9F_DEBUG"] = EximTableViz9019D4275A2B4124B398FEE443B05F9F_DEBUG;
 }
-export default EximTableViz9019D4275A2B4124B398FEE443B05F9F;
+export default EximTableViz9019D4275A2B4124B398FEE443B05F9F_DEBUG;

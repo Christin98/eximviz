@@ -8,6 +8,8 @@ import "./../style/visual.less";
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
+import IDownloadService = powerbi.extensibility.IDownloadService;
+
 
 import { Grid, ColDef, GridOptions, ValueFormatterService } from 'ag-grid-community';
 import 'ag-grid-enterprise'
@@ -44,6 +46,7 @@ const sideBar = {
             toolPanel: 'agFiltersToolPanel',
         }
     ],
+    
 };
 
 const defaultGridConfig = {
@@ -70,6 +73,13 @@ const defaultGridConfig = {
     suppressAggFuncInHeader: true,
     suppressExcelExport: false,
     blockLoadDebounceMillis: DEFAULT_DEBOUNCE_MS,
+    statusBar: {
+        statusPanels: [
+          { statusPanel: "agTotalAndFilteredRowCountComponent", align: "left" },
+          { statusPanel: "agTotalRowCountComponent", align: "center" },
+          { statusPanel: "agFilteredRowCountComponent" }
+        ]
+      },
     defaultColDef: {
         editable:false,
         enableRowGroup: true,
@@ -103,15 +113,20 @@ export class Visual implements IVisual {
     private readonly element: HTMLElement;
     private gridOptions: GridOptions;
     private button: HTMLButtonElement;
+    private downloadservice : IDownloadService
 
     constructor(options: VisualConstructorOptions) {
     this.element = options.element;
+    this.downloadservice = options.host.downloadService
     this.element.classList.add('ag-theme-balham');
 
+    // this.button.onclick = () => {
+    //     // let contentXlsx: string = 
+    //     this.downloadservice.exportVisualsContent
+    // }
     }
 
     public update(options: VisualUpdateOptions) {
-
         let dataView = options.dataViews[0];
         const settings = this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
