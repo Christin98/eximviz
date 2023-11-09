@@ -9,7 +9,7 @@ var EximTableViz9019D4275A2B4124B398FEE443B05F9F_DEBUG: IVisualPlugin = {
     name: 'EximTableViz9019D4275A2B4124B398FEE443B05F9F_DEBUG',
     displayName: 'EximTableViz',
     class: 'Visual',
-    apiVersion: '5.3.0',
+    apiVersion: '5.4.0',
     create: (options?: VisualConstructorOptions) => {
         if (Visual) {
             return new Visual(options);
