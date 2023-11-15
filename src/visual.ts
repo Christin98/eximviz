@@ -119,6 +119,9 @@ export class Visual implements IVisual {
     this.element = options.element;
     this.downloadservice = options.host.downloadService
     this.element.classList.add('ag-theme-balham');
+    this.button = document.createElement('button')
+    this.button.innerHTML = 'Download'
+    this.element.appendChild(this.button);
 
     // this.button.onclick = () => {
     //     // let contentXlsx: string = 
@@ -174,6 +177,41 @@ export class Visual implements IVisual {
             } as GridOptions;
 
             new Grid(this.element, this.gridOptions);
+            this.button.onclick = () => {
+                const paginationPageSize = this.gridOptions.paginationPageSize; // Replace with your actual pagination settings
+                const currentPage = this.gridOptions.api.paginationGetCurrentPage(); // Get the current active page
+                const startRow = currentPage * paginationPageSize;
+                const endRow = Math.min(startRow + paginationPageSize, this.gridOptions.api.getDisplayedRowCount());
+
+                console.log(paginationPageSize, currentPage, startRow, endRow)
+
+                const displayedData = [];
+                for (let i = startRow; i < endRow; i++) {
+                    const rowNode = this.gridOptions.api.getDisplayedRowAtIndex(i);
+                    displayedData.push(rowNode.data);
+                }
+
+                console.log(displayedData)
+
+                const jsonData = JSON.stringify(displayedData);
+
+                console.log(jsonData)
+                
+                const base64String = btoa(jsonData);
+
+                console.log(base64String)
+
+                let contentXlsx: string = base64String;
+
+                this.downloadservice.exportVisualsContent(contentXlsx, "myfile.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx file").then((result) => {
+                    if (result) {
+                        //do something
+                        console.log(result);
+                    }
+                }).catch(() => {
+                    //handle error
+                });
+    }
         } else {
             let api = this.gridOptions.api;
             api.setColumnDefs(columnDefs);
