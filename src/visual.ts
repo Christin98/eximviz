@@ -122,12 +122,7 @@ export class Visual implements IVisual {
     this.button = document.createElement('button')
     this.button.innerHTML = 'Download'
     this.element.appendChild(this.button);
-
-    // this.button.onclick = () => {
-    //     // let contentXlsx: string = 
-    //     this.downloadservice.exportVisualsContent
-    // }
-    }
+}
 
     public update(options: VisualUpdateOptions) {
         let dataView = options.dataViews[0];
@@ -178,6 +173,7 @@ export class Visual implements IVisual {
 
             new Grid(this.element, this.gridOptions);
             this.button.onclick = () => {
+                let contentXlsx: string ;
                 const paginationPageSize = this.gridOptions.paginationPageSize; // Replace with your actual pagination settings
                 const currentPage = this.gridOptions.api.paginationGetCurrentPage(); // Get the current active page
                 const startRow = currentPage * paginationPageSize;
@@ -201,17 +197,46 @@ export class Visual implements IVisual {
 
                 console.log(base64String)
 
-                let contentXlsx: string = base64String;
+                var bytes = new Uint8Array(base64String.length);
+                for (var i = 0; i < base64String.length; i++) {
+                    bytes[i] = base64String.charCodeAt(i);
+                }
+
+                console.log(bytes)
+                let data: Blob | string = this.gridOptions.api.getDataAsExcel()
+
+                var blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+                console.log(data)
+
+                var reader = new FileReader();
+                // Define a callback for when the file is loaded
+                reader.onload = function(event) {
+                    // Get the result (file content) as a string
+                    var text = event.target.result;
+                    if (typeof text === 'string') {
+                        contentXlsx = text
+                    };
+                    console.log(contentXlsx); // Output the content as a string
+                };
+                // Read the Blob as text
+                if (typeof data === 'string') {
+                    reader.readAsText(new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+                } else {
+                    reader.readAsText(data);
+                }
+                
 
                 this.downloadservice.exportVisualsContent(contentXlsx, "myfile.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx file").then((result) => {
                     if (result) {
                         //do something
                         console.log(result);
                     }
-                }).catch(() => {
+                }).catch((error) => {
                     //handle error
+                    console.log(error)
                 });
-    }
+            }
         } else {
             let api = this.gridOptions.api;
             api.setColumnDefs(columnDefs);
