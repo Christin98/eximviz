@@ -4,6 +4,11 @@ import '@babel/polyfill';
 import powerbi from "powerbi-visuals-api";
 // import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import "./../style/visual.less";
+import { Parser } from 'json2csv';
+import * as htmlToImage from 'html-to-image';
+
+
+
 
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
@@ -187,47 +192,59 @@ export class Visual implements IVisual {
                     displayedData.push(rowNode.data);
                 }
 
-                console.log(displayedData)
+                const jsonData1: string = JSON.stringify(displayedData);
 
-                const jsonData = JSON.stringify(displayedData);
+                const jsonData2: any[] = JSON.parse(jsonData1);
 
-                console.log(jsonData)
-                
-                const base64String = btoa(jsonData);
+                const extractedValues = jsonData2.map(item => ({
+                    IMPORTER_NAME: item.importer_name,
+                    SUPPLIER_NAME: item.supplier_name,
+                    HS_CODE: item.hs_code,
+                    ORIGIN_COUNTRY: item.origin_country,
+                    PORT_OF_SHIPMENT: item.port_of_shipment,
+                    INDIAN_PORT: item.indian_port,
+                    TOTAL_ASSESS_USD: item.total_assess_usd,
+                    QUANTITY: item.quantity
+                }));
 
-                console.log(base64String)
-
-                var bytes = new Uint8Array(base64String.length);
-                for (var i = 0; i < base64String.length; i++) {
-                    bytes[i] = base64String.charCodeAt(i);
+                interface ImportData {
+                    "IMPORTER_NAME" : string,
+                    "SUPPLIER_NAME" : string,
+                    "HS_CODE"       : string,
+                    "ORIGIN_COUNTRY" :string,
+                    "PORT_OF_SHIPMENT":string,
+                    "INDIAN_PORT": string,
+                    "TOTAL_ASSESS_USD": number,
+                    "QUANTITY": number
                 }
+                const jsonData: ImportData[] = [];
 
-                console.log(bytes)
-                let data: Blob | string = this.gridOptions.api.getDataAsExcel()
-
-                var blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-                console.log(data)
-
-                var reader = new FileReader();
-                // Define a callback for when the file is loaded
-                reader.onload = function(event) {
-                    // Get the result (file content) as a string
-                    var text = event.target.result;
-                    if (typeof text === 'string') {
-                        contentXlsx = text
-                    };
-                    console.log(contentXlsx); // Output the content as a string
-                };
-                // Read the Blob as text
-                if (typeof data === 'string') {
-                    reader.readAsText(new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
-                } else {
-                    reader.readAsText(data);
-                }
+                for(let i = 0; i< extractedValues.length ;i++ ){
+                const entry: ImportData = 
+                    {
+                        HS_CODE: extractedValues[i]?.HS_CODE,
+                        IMPORTER_NAME: extractedValues[i]?.IMPORTER_NAME ,
+                        INDIAN_PORT: extractedValues[i]?.INDIAN_PORT ,
+                        ORIGIN_COUNTRY: extractedValues[i]?.ORIGIN_COUNTRY ,
+                        PORT_OF_SHIPMENT: extractedValues[i]?.PORT_OF_SHIPMENT ,
+                        QUANTITY: extractedValues[i]?.QUANTITY ,
+                        SUPPLIER_NAME: extractedValues[i]?.SUPPLIER_NAME ,
+                        TOTAL_ASSESS_USD: extractedValues[i]?.TOTAL_ASSESS_USD,
+                    }
                 
+                jsonData.push(entry)
+            }
 
-                this.downloadservice.exportVisualsContent(contentXlsx, "myfile.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx file").then((result) => {
+                const fields: string[] = ["IMPORTER_NAME","SUPPLIER_NAME","HS_CODE","ORIGIN_COUNTRY","PORT_OF_SHIPMENT","INDIAN_PORT","TOTAL_ASSESS_USD","QUANTITY"];
+
+                const parser = new Parser<ImportData>({
+                    fields
+                });
+
+                const csv: string = parser.parse(jsonData);
+                const csv_encoded = btoa(csv)
+                this.downloadservice.exportVisualsContentExtended(csv_encoded, "myfile.csv", "base64", "CSV file").then((result) =>{
+                // this.downloadservice.exportVisualsContent(base64String, "myfile.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx file").then((result) => {
                     if (result) {
                         //do something
                         console.log(result);
