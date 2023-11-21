@@ -8,6 +8,7 @@
         "outDir": "./.tmp/build/",
         "moduleResolution": "node",
         "declaration": true,
+        "module": "commonjs",
         "lib": [
             "es2022",
             "dom"

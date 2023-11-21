@@ -125,7 +125,7 @@ export class Visual implements IVisual {
     this.downloadservice = options.host.downloadService
     this.element.classList.add('ag-theme-balham');
     this.button = document.createElement('button')
-    this.button.innerHTML = 'Download'
+    this.button.innerHTML = 'Download CSV'
     this.element.appendChild(this.button);
 }
 
