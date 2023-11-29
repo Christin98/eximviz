@@ -6,6 +6,7 @@ import powerbi from "powerbi-visuals-api";
 import "./../style/visual.less";
 import { Parser } from 'json2csv';
 import * as htmlToImage from 'html-to-image';
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 
 
 
@@ -113,7 +114,7 @@ const defaultGridConfig = {
 
 
 export class Visual implements IVisual {
-
+    private host: IVisualHost;
     private visualSettings: VisualSettings;
     private readonly element: HTMLElement;
     private gridOptions: GridOptions;
@@ -125,8 +126,9 @@ export class Visual implements IVisual {
     this.downloadservice = options.host.downloadService
     this.element.classList.add('ag-theme-balham');
     this.button = document.createElement('button')
-    this.button.innerHTML = 'Download CSV'
+    this.button.innerHTML = 'Download'
     this.element.appendChild(this.button);
+    this.host = options.host;
 }
 
     public update(options: VisualUpdateOptions) {
@@ -191,7 +193,7 @@ export class Visual implements IVisual {
                     const rowNode = this.gridOptions.api.getDisplayedRowAtIndex(i);
                     displayedData.push(rowNode.data);
                 }
-
+                
                 const jsonData1: string = JSON.stringify(displayedData);
 
                 const jsonData2: any[] = JSON.parse(jsonData1);
@@ -235,24 +237,27 @@ export class Visual implements IVisual {
                 jsonData.push(entry)
             }
 
-                const fields: string[] = ["IMPORTER_NAME","SUPPLIER_NAME","HS_CODE","ORIGIN_COUNTRY","PORT_OF_SHIPMENT","INDIAN_PORT","TOTAL_ASSESS_USD","QUANTITY"];
+            const jsonString = JSON.stringify(jsonData);
+            const requestBody = {
+                name: jsonString
+              };
 
-                const parser = new Parser<ImportData>({
-                    fields
-                });
+            console.log(JSON.stringify(requestBody))
+            const downloadlink = `https://powerbidownloadfile.azurewebsites.net/api/downloadlink`;
 
-                const csv: string = parser.parse(jsonData);
-                const csv_encoded = btoa(csv)
-                this.downloadservice.exportVisualsContentExtended(csv_encoded, "myfile.csv", "base64", "CSV file").then((result) =>{
-                // this.downloadservice.exportVisualsContent(base64String, "myfile.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx file").then((result) => {
-                    if (result) {
-                        //do something
-                        console.log(result);
-                    }
-                }).catch((error) => {
-                    //handle error
-                    console.log(error)
-                });
+            fetch(downloadlink,{
+                method: 'POST',
+                // mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                  },
+                body: JSON.stringify(requestBody)
+            }).then(response => response.text())
+            .then(result => {
+                 const url = `https://powerbidownloadfile.azurewebsites.net${result}`
+                 console.log(url)
+                 this.host.launchUrl(url)})
+            .catch(error => console.log('error', error));
             }
         } else {
             let api = this.gridOptions.api;

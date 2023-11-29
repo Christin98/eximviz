@@ -92,7 +92,7 @@
     {
       "name": "WebAccess",
       "essential": true,
-      "parameters": ["https://*.microsoft.com", "https://localhost:8080", "http://localhost:8080", "https://*.powerbi.com"]
+      "parameters": ["https://*.microsoft.com", "https://localhost:8080", "http://localhost:8080", "https://*.powerbi.com","https://powerbidownloadfile.azurewebsites.net"]
     }
   ]
 }
