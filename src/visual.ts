@@ -77,13 +77,13 @@ const defaultGridConfig = {
     enableCharts: true,
     suppressRowClickSelection: true,
     suppressAggFuncInHeader: true,
-    suppressExcelExport: false,
+    suppressExcelExport: true,
     blockLoadDebounceMillis: DEFAULT_DEBOUNCE_MS,
     statusBar: {
         statusPanels: [
           { statusPanel: "agTotalAndFilteredRowCountComponent", align: "left" },
           { statusPanel: "agTotalRowCountComponent", align: "center" },
-          { statusPanel: "agFilteredRowCountComponent" }
+          { statusPanel: "agFilteredRowCountComponent", align: "right" }
         ]
       },
     defaultColDef: {
@@ -116,17 +116,19 @@ const defaultGridConfig = {
 export class Visual implements IVisual {
     private host: IVisualHost;
     private visualSettings: VisualSettings;
-    private readonly element: HTMLElement;
+    private element: HTMLElement;
     private gridOptions: GridOptions;
     private button: HTMLButtonElement;
     private downloadservice : IDownloadService
 
     constructor(options: VisualConstructorOptions) {
     this.element = options.element;
+    this.element.style.display = "flex"
+    this.element.style.flexDirection = "column"
     this.downloadservice = options.host.downloadService
     this.element.classList.add('ag-theme-balham');
     this.button = document.createElement('button')
-    this.button.innerHTML = 'Download'
+    this.button.innerHTML = 'Download Excel'
     this.element.appendChild(this.button);
     this.host = options.host;
 }

@@ -6,8 +6,9 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
 import 'ag-grid-enterprise';
 export declare class Visual implements IVisual {
+    private host;
     private visualSettings;
-    private readonly element;
+    private element;
     private gridOptions;
     private button;
     private downloadservice;
