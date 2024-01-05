@@ -92,7 +92,7 @@
     {
       "name": "WebAccess",
       "essential": true,
-      "parameters": ["https://*.microsoft.com", "https://localhost:8080", "http://localhost:8080", "https://*.powerbi.com","https://powerbidownloadfile.azurewebsites.net"]
+      "parameters": ["https://*.microsoft.com", "https://localhost:8080", "http://localhost:8080", "https://*.powerbi.com","https://func-eximpedia-workspace-ci-prod.azurewebsites.net", "https://powerbidownload.azurewebsites.net"]
     }
   ]
 }

@@ -135,6 +135,7 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         let dataView = options.dataViews[0];
+        console.log(dataView)
         const settings = this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
            const columnDefs = dataView.table.columns.map((c, index) => {
@@ -160,17 +161,54 @@ export class Visual implements IVisual {
             };
             row.forEach((item, i) => {
                 rowData[columnDefs[i].field] = item;
+                if(columnDefs[i].headerName === "TOTAL_ASSESS_USD"){
+                    rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2);
+                    if(item == ""){
+                        rowData[columnDefs[i].field] = "0";
+                    }
+                }
+                if(columnDefs[i].headerName === "FOB_USD"){
+                   console.log(rowData[columnDefs[i].field])
+                    // rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2)
+                    rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2)
+                }
+                    if(columnDefs[i].headerName == "TOTAL_ASSESS_USD_PERCENTAGE"){
+                        rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(2)+"%"
+                        if(item == ""){
+                            rowData[columnDefs[i].field] = "0";
+                        }
+                    }
+                    if(columnDefs[i].headerName == "FOB_PERCENTAGE"){
+                        rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(3)+"%"
+                        if(item == ""){
+                            rowData[columnDefs[i].field] = "0";
+                        }
+                    }
+                    if(columnDefs[i].headerName == "STD_QUANTITY_PERCENTAGE"){
+                        rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(3)+"%"
+                        if(item == ""){
+                            rowData[columnDefs[i].field] = "0";
+                        }
+                    }
+                    if(columnDefs[i].headerName == "STD_QUANTITY"){
+                        rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(2);
+                        if(item == ""){
+                            rowData[columnDefs[i].field] = "0";
+                        }
+                    }
+                    if(columnDefs[i].headerName == "UNIT_PRICE_USD"){
+                        rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2);
+                        if(item == ""){
+                            rowData[columnDefs[i].field] = "0";
+                        }
+                    }
+
                 if(item == ""){
                     rowData[columnDefs[i].field] = "NULL";
-                }
-                if(columnDefs[i].headerName == "Sum of TOTAL_ASSESS_USD"){
-                    rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2)
                 }
             });
             return rowData;
         });
-
-
 
         if(!this.gridOptions) {
             this.gridOptions = {
@@ -199,6 +237,7 @@ export class Visual implements IVisual {
                 const jsonData1: string = JSON.stringify(displayedData);
 
                 const jsonData2: any[] = JSON.parse(jsonData1);
+                console.log("json data", jsonData2)
 
                 const extractedValues = jsonData2.map(item => ({
                     IMPORTER_NAME: item.importer_name,
@@ -206,9 +245,18 @@ export class Visual implements IVisual {
                     HS_CODE: item.hs_code,
                     ORIGIN_COUNTRY: item.origin_country,
                     PORT_OF_SHIPMENT: item.port_of_shipment,
+                    FOREIGN_PORT :item.foreign_port,
                     INDIAN_PORT: item.indian_port,
                     TOTAL_ASSESS_USD: item.total_assess_usd,
-                    QUANTITY: item.quantity
+                    STD_QUANTITY: item.std_quantity,
+                    EXPORTER_NAME :item.exporter_name,
+                    BUYER_NAME : item.buyer_name,
+                    PERCENTAGE_OF_FOB_USD: item.fob_percentage,
+                    PERCENTAGE_OF_STD_QUANTITY:item.std_quantity_percentage,
+                    FOB_USD:item.fob_usd,
+                    IEC:item.iec,
+                    UNIT_PRICE_USD:item.unit_price_usd,
+                    TOTAL_ASSESS_USD_PERCENTAGE:item.total_assess_usd_percentage
                 }));
 
                 interface ImportData {
@@ -219,7 +267,16 @@ export class Visual implements IVisual {
                     "PORT_OF_SHIPMENT":string,
                     "INDIAN_PORT": string,
                     "TOTAL_ASSESS_USD": number,
-                    "QUANTITY": number
+                    "STD_QUANTITY": number,
+                    "EXPORTER_NAME": string,
+                    "BUYER_NAME":string,
+                    "PERCENTAGE_OF_FOB_USD":number,
+                    "PERCENTAGE_OF_STD_QUANTITY": number,
+                    "FOB_USD":number,
+                    "FOREIGN_PORT":string,
+                    "UNIT_PRICE_USD":number,
+                    "IEC":number,
+                    "TOTAL_ASSESS_USD_PERCENTAGE":number
                 }
                 const jsonData: ImportData[] = [];
 
@@ -229,11 +286,20 @@ export class Visual implements IVisual {
                         HS_CODE: extractedValues[i]?.HS_CODE,
                         IMPORTER_NAME: extractedValues[i]?.IMPORTER_NAME ,
                         INDIAN_PORT: extractedValues[i]?.INDIAN_PORT ,
+                        FOREIGN_PORT:extractedValues[i]?.FOREIGN_PORT,
                         ORIGIN_COUNTRY: extractedValues[i]?.ORIGIN_COUNTRY ,
                         PORT_OF_SHIPMENT: extractedValues[i]?.PORT_OF_SHIPMENT ,
-                        QUANTITY: extractedValues[i]?.QUANTITY ,
+                        STD_QUANTITY: extractedValues[i]?.STD_QUANTITY ,
                         SUPPLIER_NAME: extractedValues[i]?.SUPPLIER_NAME ,
                         TOTAL_ASSESS_USD: extractedValues[i]?.TOTAL_ASSESS_USD,
+                        EXPORTER_NAME:extractedValues[i]?.EXPORTER_NAME,
+                        BUYER_NAME:extractedValues[i]?.BUYER_NAME,
+                        PERCENTAGE_OF_FOB_USD:extractedValues[i]?.PERCENTAGE_OF_FOB_USD,
+                        FOB_USD:extractedValues[i]?.FOB_USD,
+                        PERCENTAGE_OF_STD_QUANTITY:extractedValues[i]?.PERCENTAGE_OF_STD_QUANTITY,
+                        IEC:extractedValues[i]?.IEC,
+                        UNIT_PRICE_USD:extractedValues[i]?.UNIT_PRICE_USD,
+                        TOTAL_ASSESS_USD_PERCENTAGE:extractedValues[i]?.TOTAL_ASSESS_USD_PERCENTAGE
                     }
                 
                 jsonData.push(entry)
@@ -245,7 +311,7 @@ export class Visual implements IVisual {
               };
 
             console.log(JSON.stringify(requestBody))
-            const downloadlink = `https://powerbidownloadfile.azurewebsites.net/api/downloadlink`;
+            const downloadlink = `https://powerbidownload.azurewebsites.net/api/downloadlink`;
 
             fetch(downloadlink,{
                 method: 'POST',
@@ -256,7 +322,7 @@ export class Visual implements IVisual {
                 body: JSON.stringify(requestBody)
             }).then(response => response.text())
             .then(result => {
-                 const url = `https://powerbidownloadfile.azurewebsites.net${result}`
+                 const url = `https://powerbidownload.azurewebsites.net${result}`
                  console.log(url)
                  this.host.launchUrl(url)})
             .catch(error => console.log('error', error));

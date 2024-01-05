@@ -1,5 +1,5 @@
 {
-		"version": "1.0.1.1",
+		"version": "1.1.0.0",
 		"author": {"name":"Jaya & Christin","email":"jaya.maheshwari@exmimpedia.onmicrosoft.com"},
 		"resources": [
 			{
@@ -8,7 +8,7 @@
 				"file": "resources/EximTableViz9019D4275A2B4124B398FEE443B05F9F.pbiviz.json"
 			}
 		],
-		"visual": {"name":"EximTableViz","displayName":"EximTableViz","guid":"EximTableViz9019D4275A2B4124B398FEE443B05F9F","visualClassName":"Visual","version":"1.0.1.1","description":"Table Visual with filter.","supportUrl":"null","gitHubUrl":""},
+		"visual": {"name":"EximTableViz","displayName":"EximTableViz","guid":"EximTableViz9019D4275A2B4124B398FEE443B05F9F","visualClassName":"Visual","version":"1.1.0.0","description":"Table Visual with filter.","supportUrl":"null","gitHubUrl":""},
 		"metadata": {
 			"pbivizjson": {
 				"resourceId": "rId0"
