@@ -60,7 +60,7 @@ const defaultGridConfig = {
     autoSizePadding: 0,
     enableRangeSelection: true,
     rowGroupPanelShow: 'onlyWhenGrouping',
-    pivotMode: false,
+    pivotMode: true,
     enableValue: true,
     floatingFiltersHeight: 20,
     enableAdvancedFilter: false,
@@ -311,7 +311,7 @@ export class Visual implements IVisual {
               };
 
             console.log(JSON.stringify(requestBody))
-            const downloadlink = `https://powerbidownload.azurewebsites.net/api/downloadlink`;
+            const downloadlink = `https://funcprem-eximpedia-powerbidownload-ci-prod.azurewebsites.net/api/downloadlink`;
 
             fetch(downloadlink,{
                 method: 'POST',
@@ -322,7 +322,7 @@ export class Visual implements IVisual {
                 body: JSON.stringify(requestBody)
             }).then(response => response.text())
             .then(result => {
-                 const url = `https://powerbidownload.azurewebsites.net${result}`
+                 const url = `https://funcprem-eximpedia-powerbidownload-ci-prod.azurewebsites.net${result}`
                  console.log(url)
                  this.host.launchUrl(url)})
             .catch(error => console.log('error', error));
