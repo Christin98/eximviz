@@ -22,6 +22,7 @@ import 'ag-grid-enterprise'
 import { ExcelExportModule } from 'ag-grid-enterprise';
 import { VisualSettings } from './settings';
 import { LicenseManager } from 'ag-grid-enterprise';
+import { Console } from 'console';
 
 
 var checkboxSelection = function (params) {
@@ -60,7 +61,7 @@ const defaultGridConfig = {
     autoSizePadding: 0,
     enableRangeSelection: true,
     rowGroupPanelShow: 'onlyWhenGrouping',
-    pivotMode: true,
+    pivotMode: false,
     enableValue: true,
     floatingFiltersHeight: 20,
     enableAdvancedFilter: false,
@@ -89,7 +90,7 @@ const defaultGridConfig = {
     defaultColDef: {
         editable:false,
         enableRowGroup: true,
-        enablePivot: true,
+        enablePivot: false,
         enableValue: true,
         resizable: true,
         sortable: true,
@@ -143,6 +144,12 @@ export class Visual implements IVisual {
                 headerName: c.displayName,
                 field: c.displayName.replace(/\s/g, '').toLowerCase(),
             } as ColDef;
+
+            if(c.roles.value) {
+                console.log("True");
+            } else {
+                console.log("False");
+            }
 
             if (index === 0) {
                 columnDef.headerCheckboxSelection = true;
