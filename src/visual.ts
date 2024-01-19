@@ -139,16 +139,27 @@ export class Visual implements IVisual {
         console.log(dataView)
         const settings = this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
+        const currencyFormatter = (params) => {  return '$' + formatNumber(params.value);}
+
+        const formatNumber = (number) => { 
+            console.log(number) // this puts commas into the number eg 1000 goes to 1,000,  // i pulled this from stack overflow, i have no idea how it works  
+            return Math.floor(number).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+        }
+
            const columnDefs = dataView.table.columns.map((c, index) => {
             const columnDef = {
                 headerName: c.displayName,
                 field: c.displayName.replace(/\s/g, '').toLowerCase(),
             } as ColDef;
 
-            if(c.roles.value) {
+            if(c.isMeasure) {
                 console.log("True");
+                if(c.displayName)
+                columnDef.valueFormatter = currencyFormatter;
             } else {
                 console.log("False");
+                columnDef.enablePivot = false
+                columnDef.enableRowGroup = true
             }
 
             if (index === 0) {
@@ -168,51 +179,51 @@ export class Visual implements IVisual {
             };
             row.forEach((item, i) => {
                 rowData[columnDefs[i].field] = item;
-                if(columnDefs[i].headerName === "TOTAL_ASSESS_USD"){
-                    rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2);
-                    if(item == ""){
-                        rowData[columnDefs[i].field] = "0";
-                    }
-                }
-                if(columnDefs[i].headerName === "FOB_USD"){
-                   console.log(rowData[columnDefs[i].field])
-                    // rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2)
-                    rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2)
-                }
-                    if(columnDefs[i].headerName == "TOTAL_ASSESS_USD_PERCENTAGE"){
-                        rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(2)+"%"
-                        if(item == ""){
-                            rowData[columnDefs[i].field] = "0";
-                        }
-                    }
-                    if(columnDefs[i].headerName == "FOB_PERCENTAGE"){
-                        rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(3)+"%"
-                        if(item == ""){
-                            rowData[columnDefs[i].field] = "0";
-                        }
-                    }
-                    if(columnDefs[i].headerName == "STD_QUANTITY_PERCENTAGE"){
-                        rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(3)+"%"
-                        if(item == ""){
-                            rowData[columnDefs[i].field] = "0";
-                        }
-                    }
-                    if(columnDefs[i].headerName == "STD_QUANTITY"){
-                        rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(2);
-                        if(item == ""){
-                            rowData[columnDefs[i].field] = "0";
-                        }
-                    }
-                    if(columnDefs[i].headerName == "UNIT_PRICE_USD"){
-                        rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2);
-                        if(item == ""){
-                            rowData[columnDefs[i].field] = "0";
-                        }
-                    }
+            //     if(columnDefs[i].headerName === "TOTAL_ASSESS_USD"){
+            //         rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2);
+            //         if(item == ""){
+            //             rowData[columnDefs[i].field] = "0";
+            //         }
+            //     }
+            //     if(columnDefs[i].headerName === "FOB_USD"){
+            //        console.log(rowData[columnDefs[i].field])
+            //         // rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2)
+            //         rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2)
+            //     }
+            //         if(columnDefs[i].headerName == "TOTAL_ASSESS_USD_PERCENTAGE"){
+            //             rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(2)+"%"
+            //             if(item == ""){
+            //                 rowData[columnDefs[i].field] = "0";
+            //             }
+            //         }
+            //         if(columnDefs[i].headerName == "FOB_PERCENTAGE"){
+            //             rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(3)+"%"
+            //             if(item == ""){
+            //                 rowData[columnDefs[i].field] = "0";
+            //             }
+            //         }
+            //         if(columnDefs[i].headerName == "STD_QUANTITY_PERCENTAGE"){
+            //             rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(3)+"%"
+            //             if(item == ""){
+            //                 rowData[columnDefs[i].field] = "0";
+            //             }
+            //         }
+            //         if(columnDefs[i].headerName == "STD_QUANTITY"){
+            //             rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(2);
+            //             if(item == ""){
+            //                 rowData[columnDefs[i].field] = "0";
+            //             }
+            //         }
+            //         if(columnDefs[i].headerName == "UNIT_PRICE_USD"){
+            //             rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2);
+            //             if(item == ""){
+            //                 rowData[columnDefs[i].field] = "0";
+            //             }
+            //         }
 
-                if(item == ""){
-                    rowData[columnDefs[i].field] = "NULL";
-                }
+            //     if(item == ""){
+            //         rowData[columnDefs[i].field] = "NULL";
+            //     }
             });
             return rowData;
         });
