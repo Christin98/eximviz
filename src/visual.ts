@@ -141,6 +141,16 @@ export class Visual implements IVisual {
 
         const currencyFormatter = (params) => {  return '$' + formatNumber(params.value);}
         const numberFormatter = (params) => { return '' + formatNumber(params.value)}
+        const stringFormatter = (params) => { return formatString(params.value)}
+
+        const formatString = (string) => {
+            console.log(string)
+            if (string === undefined || string === null || string === "") {
+                return "NULL"
+            }
+
+            return string
+        }
 
         const formatNumber = (number) => { 
             console.log(number)
@@ -165,9 +175,12 @@ export class Visual implements IVisual {
                 else
                     columnDef.valueFormatter = numberFormatter;
                 columnDef.enableValue = true
+                columnDef.cellDataType = 'number'
+                columnDef.aggFunc = 'sum'
             } else {
                 console.log("False");
-                columnDef.cellDataType = "text"
+                columnDef.valueFormatter = stringFormatter;
+                columnDef.cellDataType = 'text'
                 columnDef.enablePivot = false
                 columnDef.enableRowGroup = true
                 columnDef.enableValue = false
