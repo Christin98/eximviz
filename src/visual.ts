@@ -140,10 +140,16 @@ export class Visual implements IVisual {
         const settings = this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
         const currencyFormatter = (params) => {  return '$' + formatNumber(params.value);}
+        const numberFormatter = (params) => { return '' + formatNumber(params.value)}
 
         const formatNumber = (number) => { 
-            console.log(number) // this puts commas into the number eg 1000 goes to 1,000,  // i pulled this from stack overflow, i have no idea how it works  
-            return Math.floor(number).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+            console.log(number)
+            if (number === undefined || number === null) {
+                return 0;
+            }
+        
+            // Add commas and round to 2 decimal places
+            return Number(number).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
         }
 
            const columnDefs = dataView.table.columns.map((c, index) => {
@@ -154,12 +160,17 @@ export class Visual implements IVisual {
 
             if(c.isMeasure) {
                 console.log("True");
-                if(c.displayName)
-                columnDef.valueFormatter = currencyFormatter;
+                if(c.displayName.includes("usd") || c.displayName.includes("USD"))
+                    columnDef.valueFormatter = currencyFormatter;
+                else
+                    columnDef.valueFormatter = numberFormatter;
+                columnDef.enableValue = true
             } else {
                 console.log("False");
+                columnDef.cellDataType = "text"
                 columnDef.enablePivot = false
                 columnDef.enableRowGroup = true
+                columnDef.enableValue = false
             }
 
             if (index === 0) {
