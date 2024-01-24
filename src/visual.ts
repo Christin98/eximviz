@@ -9,8 +9,6 @@ import * as htmlToImage from 'html-to-image';
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 
 
-
-
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
@@ -142,6 +140,8 @@ export class Visual implements IVisual {
         const currencyFormatter = (params) => {  return '$' + formatNumber(params.value);}
         const numberFormatter = (params) => { return '' + formatNumber(params.value)}
         const stringFormatter = (params) => { return formatString(params.value)}
+        const percentageFormatter = (params) => { return formatPercentage(params.value) + "%"}
+
 
         const formatString = (string) => {
             console.log(string)
@@ -162,6 +162,16 @@ export class Visual implements IVisual {
             return Number(number).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
         }
 
+        const formatPercentage = (number) => { 
+            console.log(number)
+            if (number === undefined || number === null) {
+                return 0;
+            }
+        
+            // Add commas and round to 2 decimal places
+            return Number(number).toFixed(4);
+        }
+
            const columnDefs = dataView.table.columns.map((c, index) => {
             const columnDef = {
                 headerName: c.displayName,
@@ -170,11 +180,13 @@ export class Visual implements IVisual {
 
             if(c.isMeasure) {
                 console.log("True");
-                if(c.displayName.includes("usd") || c.displayName.includes("USD"))
+                if(c.displayName.includes("usd") || c.displayName.includes("USD")|| c.displayName.includes("duty") || c.displayName.includes("DUTY"))
                     columnDef.valueFormatter = currencyFormatter;
+                else if(c.displayName.includes("percentage") || c.displayName.includes("PERCENTAGE"))
+                    columnDef.valueFormatter = percentageFormatter;
                 else
                     columnDef.valueFormatter = numberFormatter;
-                columnDef.enableValue = true
+                // columnDef.enableValue = true
                 columnDef.cellDataType = 'number'
                 columnDef.aggFunc = 'sum'
             } else {
@@ -261,7 +273,11 @@ export class Visual implements IVisual {
             } as GridOptions;
 
             new Grid(this.element, this.gridOptions);
+
+            console.log(this.gridOptions.columnApi.getColumnState());
+
             this.button.onclick = () => {
+                console.log(this.gridOptions.columnApi.getColumnState());
                 let contentXlsx: string ;
                 const paginationPageSize = this.gridOptions.paginationPageSize; // Replace with your actual pagination settings
                 const currentPage = this.gridOptions.api.paginationGetCurrentPage(); // Get the current active page
@@ -353,7 +369,7 @@ export class Visual implements IVisual {
               };
 
             console.log(JSON.stringify(requestBody))
-            const downloadlink = `https://funcprem-eximpedia-powerbidownload-ci-prod.azurewebsites.net/api/downloadlink`;
+            const downloadlink = `https://powerbidownload.azurewebsites.net/api/downloadlink`;
 
             fetch(downloadlink,{
                 method: 'POST',
@@ -364,7 +380,7 @@ export class Visual implements IVisual {
                 body: JSON.stringify(requestBody)
             }).then(response => response.text())
             .then(result => {
-                 const url = `https://funcprem-eximpedia-powerbidownload-ci-prod.azurewebsites.net${result}`
+                 const url = `https://powerbidownload.azurewebsites.net${result}`
                  console.log(url)
                  this.host.launchUrl(url)})
             .catch(error => console.log('error', error));

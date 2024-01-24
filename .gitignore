@@ -1,1 +1,10 @@
 node_modules
+webpack.statistics.dev.html
+webpack.statistics.prod.html
+.tmp/build/src/settings.d.ts
+.tmp/build/src/visual.d.ts
+.tmp/drop/pbiviz.json
+.tmp/drop/status
+.tmp/drop/visual.js
+.tmp/drop/visual.js.LICENSE.txt
+.tmp/drop/visual.js.map
