@@ -4,11 +4,8 @@ import '@babel/polyfill';
 import powerbi from "powerbi-visuals-api";
 // import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import "./../style/visual.less";
-import { Parser } from 'json2csv';
-import * as htmlToImage from 'html-to-image';
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
-
-
+import {currencyFormatter, numberFormatter,stringFormatter,percentageFomratter} from './formatText'
 
 
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
@@ -17,25 +14,12 @@ import IVisual = powerbi.extensibility.visual.IVisual;
 import IDownloadService = powerbi.extensibility.IDownloadService;
 
 
-import { Grid, ColDef, GridOptions, ValueFormatterService } from 'ag-grid-community';
+import { Grid, ColDef, GridOptions, ValueFormatterService, GridApi, ColumnApi } from 'ag-grid-community';
 import 'ag-grid-enterprise'
-import { ExcelExportModule } from 'ag-grid-enterprise';
 import { VisualSettings } from './settings';
 import { LicenseManager } from 'ag-grid-enterprise';
-import { Console } from 'console';
-
-
-var checkboxSelection = function (params) {
-    // we put checkbox on the name if we are not doing grouping
-    return params.columnApi.getRowGroupColumns().length === 0;
-  };
-  var headerCheckboxSelection = function (params) {
-    // we put checkbox on the name if we are not doing grouping
-    return params.columnApi.getRowGroupColumns().length === 0;
-  };
 
 const DEFAULT_DEBOUNCE_MS = 500;
-
 const sideBar = {
     toolPanels: [
         {
@@ -79,6 +63,7 @@ const defaultGridConfig = {
     suppressRowClickSelection: true,
     suppressAggFuncInHeader: true,
     suppressExcelExport: true,
+    getColumnState: true,
     blockLoadDebounceMillis: DEFAULT_DEBOUNCE_MS,
     statusBar: {
         statusPanels: [
@@ -88,6 +73,7 @@ const defaultGridConfig = {
         ]
       },
     defaultColDef: {
+        rowGroup:false,
         editable:false,
         enableRowGroup: true,
         enablePivot: false,
@@ -136,49 +122,32 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         let dataView = options.dataViews[0];
-        console.log(dataView)
         const settings = this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
-        const currencyFormatter = (params) => {  return '$' + formatNumber(params.value);}
-        const numberFormatter = (params) => { return '' + formatNumber(params.value)}
-        const stringFormatter = (params) => { return formatString(params.value)}
-
-        const formatString = (string) => {
-            console.log(string)
-            if (string === undefined || string === null || string === "") {
-                return "NULL"
-            }
-
-            return string
-        }
-
-        const formatNumber = (number) => { 
-            console.log(number)
-            if (number === undefined || number === null) {
-                return 0;
-            }
-        
-            // Add commas and round to 2 decimal places
-            return Number(number).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-        }
 
            const columnDefs = dataView.table.columns.map((c, index) => {
             const columnDef = {
                 headerName: c.displayName,
                 field: c.displayName.replace(/\s/g, '').toLowerCase(),
+                
             } as ColDef;
 
             if(c.isMeasure) {
-                console.log("True");
-                if(c.displayName.includes("usd") || c.displayName.includes("USD"))
+                /* To check the value is in usd and format it */
+                if(c.displayName.includes("usd") || c.displayName.includes("USD")){
                     columnDef.valueFormatter = currencyFormatter;
-                else
+                }
+                if(c.displayName.includes("percentage") || c.displayName.includes("PERCENTAGE")){
+                    columnDef.valueFormatter = percentageFomratter;
+                }
+                else{
                     columnDef.valueFormatter = numberFormatter;
+                }
+                // aggereagtion of values
                 columnDef.enableValue = true
                 columnDef.cellDataType = 'number'
                 columnDef.aggFunc = 'sum'
             } else {
-                console.log("False");
                 columnDef.valueFormatter = stringFormatter;
                 columnDef.cellDataType = 'text'
                 columnDef.enablePivot = false
@@ -193,61 +162,13 @@ export class Visual implements IVisual {
 
             return columnDef;
         });
-
         LicenseManager.setLicenseKey(this.visualSettings.grid.gridKey)
-
         const rowData = dataView.table.rows.map((row, rowIndex) => {
             const rowData = {
-                // Add a unique identifier for the checkbox column
-                checkboxColumn: rowIndex, // Use a unique identifier, e.g., row index
+                checkboxColumn: rowIndex,
             };
             row.forEach((item, i) => {
                 rowData[columnDefs[i].field] = item;
-            //     if(columnDefs[i].headerName === "TOTAL_ASSESS_USD"){
-            //         rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2);
-            //         if(item == ""){
-            //             rowData[columnDefs[i].field] = "0";
-            //         }
-            //     }
-            //     if(columnDefs[i].headerName === "FOB_USD"){
-            //        console.log(rowData[columnDefs[i].field])
-            //         // rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2)
-            //         rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2)
-            //     }
-            //         if(columnDefs[i].headerName == "TOTAL_ASSESS_USD_PERCENTAGE"){
-            //             rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(2)+"%"
-            //             if(item == ""){
-            //                 rowData[columnDefs[i].field] = "0";
-            //             }
-            //         }
-            //         if(columnDefs[i].headerName == "FOB_PERCENTAGE"){
-            //             rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(3)+"%"
-            //             if(item == ""){
-            //                 rowData[columnDefs[i].field] = "0";
-            //             }
-            //         }
-            //         if(columnDefs[i].headerName == "STD_QUANTITY_PERCENTAGE"){
-            //             rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(3)+"%"
-            //             if(item == ""){
-            //                 rowData[columnDefs[i].field] = "0";
-            //             }
-            //         }
-            //         if(columnDefs[i].headerName == "STD_QUANTITY"){
-            //             rowData[columnDefs[i].field] = rowData[columnDefs[i].field].toFixed(2);
-            //             if(item == ""){
-            //                 rowData[columnDefs[i].field] = "0";
-            //             }
-            //         }
-            //         if(columnDefs[i].headerName == "UNIT_PRICE_USD"){
-            //             rowData[columnDefs[i].field] = "$"+rowData[columnDefs[i].field].toFixed(2);
-            //             if(item == ""){
-            //                 rowData[columnDefs[i].field] = "0";
-            //             }
-            //         }
-
-            //     if(item == ""){
-            //         rowData[columnDefs[i].field] = "NULL";
-            //     }
             });
             return rowData;
         });
@@ -259,47 +180,60 @@ export class Visual implements IVisual {
                 columnDefs: columnDefs,
                 rowData: rowData,
             } as GridOptions;
-
+            
             new Grid(this.element, this.gridOptions);
             this.button.onclick = () => {
-                let contentXlsx: string ;
-                const paginationPageSize = this.gridOptions.paginationPageSize; // Replace with your actual pagination settings
-                const currentPage = this.gridOptions.api.paginationGetCurrentPage(); // Get the current active page
+
+                let jsonString;
+                let requestBody = {};
+
+                // Get column Properties
+                const columnApi: ColumnApi = this.gridOptions.columnApi;
+                var columnProperties = []
+                var rowGropuFlag = false;
+                var columnState = columnApi.getColumnState();
+                for (let i = 0 ; i < columnState.length; i++ ){
+                    if(columnState[i]['rowGroup'] === true){
+                        rowGropuFlag = true;
+                        columnProperties.push({"columnName":  columnState[i]['colId'].toUpperCase(),
+                                "rowIndex": columnState[i]['rowGroupIndex']}
+                                )
+                    }
+                }
+               
+                if(rowGropuFlag === false){
+                const paginationPageSize = this.gridOptions.paginationPageSize; 
+                const currentPage = this.gridOptions.api.paginationGetCurrentPage();
                 const startRow = currentPage * paginationPageSize;
                 const endRow = Math.min(startRow + paginationPageSize, this.gridOptions.api.getDisplayedRowCount());
-
-                console.log(paginationPageSize, currentPage, startRow, endRow)
-
-                const displayedData = [];
-                for (let i = startRow; i < endRow; i++) {
-                    const rowNode = this.gridOptions.api.getDisplayedRowAtIndex(i);
-                    displayedData.push(rowNode.data);
-                }
-                
+                const displayedData = []
+                    for (let i = startRow; i < endRow; i++) {
+                        const rowNode = this.gridOptions.api.getDisplayedRowAtIndex(i);
+                        displayedData.push(rowNode.data);
+                    }                     
+            
                 const jsonData1: string = JSON.stringify(displayedData);
 
                 const jsonData2: any[] = JSON.parse(jsonData1);
-                console.log("json data", jsonData2)
-
                 const extractedValues = jsonData2.map(item => ({
-                    IMPORTER_NAME: item.importer_name,
-                    SUPPLIER_NAME: item.supplier_name,
-                    HS_CODE: item.hs_code,
-                    ORIGIN_COUNTRY: item.origin_country,
-                    PORT_OF_SHIPMENT: item.port_of_shipment,
-                    FOREIGN_PORT :item.foreign_port,
-                    INDIAN_PORT: item.indian_port,
-                    TOTAL_ASSESS_USD: item.total_assess_usd,
-                    STD_QUANTITY: item.std_quantity,
-                    EXPORTER_NAME :item.exporter_name,
-                    BUYER_NAME : item.buyer_name,
-                    PERCENTAGE_OF_FOB_USD: item.fob_percentage,
-                    PERCENTAGE_OF_STD_QUANTITY:item.std_quantity_percentage,
-                    FOB_USD:item.fob_usd,
-                    IEC:item.iec,
-                    UNIT_PRICE_USD:item.unit_price_usd,
-                    TOTAL_ASSESS_USD_PERCENTAGE:item.total_assess_usd_percentage
-                }));
+                    IMPORTER_NAME: item.importer_name || null,
+                    SUPPLIER_NAME: item.supplier_name || null,
+                    HS_CODE: item.hs_code || null ,
+                    ORIGIN_COUNTRY: item.origin_country || null,
+                    PORT_OF_SHIPMENT: item.port_of_shipment|| null,
+                    FOREIGN_PORT :item.foreign_port|| null,
+                    INDIAN_PORT: item.indian_port|| null,
+                    TOTAL_ASSESS_USD: item.total_assess_usd|| null,
+                    STD_QUANTITY: item.std_quantity|| null,
+                    EXPORTER_NAME :item.exporter_name|| null,
+                    BUYER_NAME : item.buyer_name|| null,
+                    PERCENTAGE_OF_FOB_USD: item.fob_percentage|| null,
+                    PERCENTAGE_OF_STD_QUANTITY:item.std_quantity_percentage|| null,
+                    FOB_USD:item.fob_usd|| null,
+                    IEC:item.iec|| null,
+                    UNIT_PRICE_USD:item.unit_price_usd|| null,
+                    TOTAL_ASSESS_USD_PERCENTAGE:item.total_assess_usd_percentage|| null
+                }))
 
                 interface ImportData {
                     "IMPORTER_NAME" : string,
@@ -346,26 +280,90 @@ export class Visual implements IVisual {
                 
                 jsonData.push(entry)
             }
+                jsonString = JSON.stringify(jsonData);  
+                requestBody = {
+                    name: jsonString,
+                    columnProperties:columnProperties
+                  };      
+            }
 
-            const jsonString = JSON.stringify(jsonData);
-            const requestBody = {
-                name: jsonString
-              };
-
-            console.log(JSON.stringify(requestBody))
-            const downloadlink = `https://funcprem-eximpedia-powerbidownload-ci-prod.azurewebsites.net/api/downloadlink`;
-
+            else if (rowGropuFlag === true) {
+            var allRowData = [];
+            this.gridOptions.api.forEachNode(function (node) {
+                if(node.data != undefined){
+                    allRowData.push(node.data);
+                }
+            });
+            const jsonData1: string = JSON.stringify(allRowData);
+            const jsonData2 :any = JSON.parse(jsonData1);
+            interface ImportData {
+                "IMPORTER_NAME" : string,
+                "SUPPLIER_NAME" : string,
+                "HS_CODE"       : string,
+                "ORIGIN_COUNTRY" :string,
+                "PORT_OF_SHIPMENT":string,
+                "INDIAN_PORT": string,
+                "TOTAL_ASSESS_USD": number,
+                "STD_QUANTITY": number,
+                "EXPORTER_NAME": string,
+                "BUYER_NAME":string,
+                "PERCENTAGE_OF_FOB_USD":number,
+                "PERCENTAGE_OF_STD_QUANTITY": number,
+                "FOB_USD":number,
+                "FOREIGN_PORT":string,
+                "UNIT_PRICE_USD":number,
+                "IEC":number,
+                "TOTAL_ASSESS_USD_PERCENTAGE":number
+            }
+            const extractedValues = jsonData2.map(item => {
+                const entry: Partial<ImportData> = {};
+              
+                if ('importer_name' in item) entry.IMPORTER_NAME = item.importer_name || null;
+                if ('supplier_name' in item) entry.SUPPLIER_NAME = item.supplier_name || null;
+                if ('hs_code' in item) entry.HS_CODE = item.hs_code || null;
+                if ('origin_country' in item) entry.ORIGIN_COUNTRY = item.origin_country || null;
+                if ('port_of_shipment' in item) entry.PORT_OF_SHIPMENT = item.port_of_shipment || null;
+                if ('foreign_port' in item) entry.FOREIGN_PORT = item.foreign_port || null;
+                if ('indian_port' in item) entry.INDIAN_PORT = item.indian_port || null;
+                if ('total_assess_usd' in item) entry.TOTAL_ASSESS_USD = item.total_assess_usd || null;
+                if ('std_quantity' in item) entry.STD_QUANTITY = item.std_quantity || null;
+                if ('exporter_name' in item) entry.EXPORTER_NAME = item.exporter_name || null;
+                if ('buyer_name' in item) entry.BUYER_NAME = item.buyer_name || null;
+                if ('fob_percentage' in item) entry.PERCENTAGE_OF_FOB_USD = item.fob_percentage || null;
+                if ('std_quantity_percentage' in item) entry.PERCENTAGE_OF_STD_QUANTITY = item.std_quantity_percentage || null;
+                if ('fob_usd' in item) entry.FOB_USD = item.fob_usd || null;
+                if ('iec' in item) entry.IEC = item.iec || null;
+                if ('unit_price_usd' in item) entry.UNIT_PRICE_USD = item.unit_price_usd || null;
+                if ('total_assess_usd_percentage' in item) entry.TOTAL_ASSESS_USD_PERCENTAGE = item.total_assess_usd_percentage || null;
+              
+                return entry as ImportData;
+              });
+              
+              const jsonData: ImportData[] = [];
+              extractedValues.forEach(entry => {
+                if (Object.keys(entry).length > 0) {
+                  jsonData.push(entry);
+                }
+              });         
+              jsonString = JSON.stringify(jsonData);   
+              requestBody = {
+                name: jsonString,
+                columnProperties:JSON.stringify(columnProperties)
+              };               
+            }
+            else{
+                console.log("Error")
+            }
+            const downloadlink = `https://powerbidownload.azurewebsites.net/api/downloadlink`;
             fetch(downloadlink,{
                 method: 'POST',
-                // mode: 'no-cors',
                 headers: {
                     'Content-Type': 'application/json'
                   },
                 body: JSON.stringify(requestBody)
             }).then(response => response.text())
             .then(result => {
-                 const url = `https://funcprem-eximpedia-powerbidownload-ci-prod.azurewebsites.net${result}`
-                 console.log(url)
+                 const url = `https://powerbidownload.azurewebsites.net${result}`
                  this.host.launchUrl(url)})
             .catch(error => console.log('error', error));
             }
