@@ -4,8 +4,6 @@ import '@babel/polyfill';
 import powerbi from "powerbi-visuals-api";
 // import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import "./../style/visual.less";
-import { Parser } from 'json2csv';
-import * as htmlToImage from 'html-to-image';
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 
 
@@ -15,9 +13,8 @@ import IVisual = powerbi.extensibility.visual.IVisual;
 import IDownloadService = powerbi.extensibility.IDownloadService;
 
 
-import { Grid, ColDef, GridOptions, ValueFormatterService } from 'ag-grid-community';
+import { Grid, ColDef, GridOptions, ValueFormatterService, createGrid, GridApi } from 'ag-grid-community';
 import 'ag-grid-enterprise'
-import { ExcelExportModule } from 'ag-grid-enterprise';
 import { VisualSettings } from './settings';
 import { LicenseManager } from 'ag-grid-enterprise';
 import { Console } from 'console';
@@ -117,6 +114,7 @@ export class Visual implements IVisual {
     private visualSettings: VisualSettings;
     private element: HTMLElement;
     private gridOptions: GridOptions;
+    private api: GridApi
     private button: HTMLButtonElement;
     private downloadservice : IDownloadService
 
@@ -272,23 +270,23 @@ export class Visual implements IVisual {
                 rowData: rowData,
             } as GridOptions;
 
-            new Grid(this.element, this.gridOptions);
+            this.api = createGrid(this.element, this.gridOptions);
 
-            console.log(this.gridOptions.columnApi.getColumnState());
+            console.log(this.api.getColumnState());
 
             this.button.onclick = () => {
-                console.log(this.gridOptions.columnApi.getColumnState());
+                console.log(this.api.getColumnState());
                 let contentXlsx: string ;
                 const paginationPageSize = this.gridOptions.paginationPageSize; // Replace with your actual pagination settings
-                const currentPage = this.gridOptions.api.paginationGetCurrentPage(); // Get the current active page
+                const currentPage = this.api.paginationGetCurrentPage(); // Get the current active page
                 const startRow = currentPage * paginationPageSize;
-                const endRow = Math.min(startRow + paginationPageSize, this.gridOptions.api.getDisplayedRowCount());
+                const endRow = Math.min(startRow + paginationPageSize, this.api.getDisplayedRowCount());
 
                 console.log(paginationPageSize, currentPage, startRow, endRow)
 
                 const displayedData = [];
                 for (let i = startRow; i < endRow; i++) {
-                    const rowNode = this.gridOptions.api.getDisplayedRowAtIndex(i);
+                    const rowNode = this.api.getDisplayedRowAtIndex(i);
                     displayedData.push(rowNode.data);
                 }
                 
@@ -386,10 +384,9 @@ export class Visual implements IVisual {
             .catch(error => console.log('error', error));
             }
         } else {
-            let api = this.gridOptions.api;
-            api.setColumnDefs(columnDefs);
-            api.setRowData(rowData);
-            api.sizeColumnsToFit();
+            this.api.setGridOption("columnDefs",columnDefs);
+            this.api.setGridOption("rowData",rowData);
+            this.api.sizeColumnsToFit();
         }
     }
 
