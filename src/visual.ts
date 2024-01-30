@@ -5,7 +5,7 @@ import powerbi from "powerbi-visuals-api";
 // import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import "./../style/visual.less";
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
-import {currencyFormatter, numberFormatter,stringFormatter,percentageFomratter} from './formatText'
+// import {currencyFormatter, numberFormatter,stringFormatter,percentageFomratter} from './formatText'
 
 
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
@@ -124,6 +124,41 @@ export class Visual implements IVisual {
         let dataView = options.dataViews[0];
         const settings = this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
+        const currencyFormatter = (params) => {  return '$' + formatNumber(params.value);}
+        const numberFormatter = (params) => { return '' + formatNumber(params.value)}
+        const stringFormatter = (params) => { return formatString(params.value)}
+        const percentageFormatter = (params) => { return formatPercentage(params.value) + "%"}
+
+
+        const formatString = (string) => {
+            console.log(string)
+            if (string === undefined || string === null || string === "") {
+                return "NULL"
+            }
+
+            return string
+        }
+
+        const formatNumber = (number) => { 
+            console.log(number)
+            if (number === undefined || number === null) {
+                return 0;
+            }
+        
+            // Add commas and round to 2 decimal places
+            return Number(number).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        }
+
+        const formatPercentage = (number) => { 
+            console.log(number)
+            if (number === undefined || number === null) {
+                return 0;
+            }
+        
+            // Add commas and round to 2 decimal places
+            return Number(number).toFixed(4);
+        }
+
 
            const columnDefs = dataView.table.columns.map((c, index) => {
             const columnDef = {
@@ -133,16 +168,12 @@ export class Visual implements IVisual {
             } as ColDef;
 
             if(c.isMeasure) {
-                /* To check the value is in usd and format it */
-                if(c.displayName.includes("usd") || c.displayName.includes("USD")){
+                if(c.displayName.includes("usd") || c.displayName.includes("USD")|| c.displayName.includes("duty") || c.displayName.includes("DUTY"))
                     columnDef.valueFormatter = currencyFormatter;
-                }
-                if(c.displayName.includes("percentage") || c.displayName.includes("PERCENTAGE")){
-                    columnDef.valueFormatter = percentageFomratter;
-                }
-                else{
+                else if(c.displayName.includes("percentage") || c.displayName.includes("PERCENTAGE"))
+                    columnDef.valueFormatter = percentageFormatter;
+                else
                     columnDef.valueFormatter = numberFormatter;
-                }
                 // aggereagtion of values
                 columnDef.enableValue = true
                 columnDef.cellDataType = 'number'
@@ -216,23 +247,23 @@ export class Visual implements IVisual {
 
                 const jsonData2: any[] = JSON.parse(jsonData1);
                 const extractedValues = jsonData2.map(item => ({
-                    IMPORTER_NAME: item.importer_name || null,
-                    SUPPLIER_NAME: item.supplier_name || null,
-                    HS_CODE: item.hs_code || null ,
-                    ORIGIN_COUNTRY: item.origin_country || null,
-                    PORT_OF_SHIPMENT: item.port_of_shipment|| null,
-                    FOREIGN_PORT :item.foreign_port|| null,
-                    INDIAN_PORT: item.indian_port|| null,
-                    TOTAL_ASSESS_USD: item.total_assess_usd|| null,
-                    STD_QUANTITY: item.std_quantity|| null,
-                    EXPORTER_NAME :item.exporter_name|| null,
-                    BUYER_NAME : item.buyer_name|| null,
-                    PERCENTAGE_OF_FOB_USD: item.fob_percentage|| null,
-                    PERCENTAGE_OF_STD_QUANTITY:item.std_quantity_percentage|| null,
-                    FOB_USD:item.fob_usd|| null,
-                    IEC:item.iec|| null,
-                    UNIT_PRICE_USD:item.unit_price_usd|| null,
-                    TOTAL_ASSESS_USD_PERCENTAGE:item.total_assess_usd_percentage|| null
+                    IMPORTER_NAME: item.importer_name ,
+                    SUPPLIER_NAME: item.supplier_name ,
+                    HS_CODE: item.hs_code  ,
+                    ORIGIN_COUNTRY: item.origin_country ,
+                    PORT_OF_SHIPMENT: item.port_of_shipment,
+                    FOREIGN_PORT :item.foreign_port,
+                    INDIAN_PORT: item.indian_port,
+                    TOTAL_ASSESS_USD: item.total_assess_usd,
+                    STD_QUANTITY: item.std_quantity,
+                    EXPORTER_NAME :item.exporter_name,
+                    BUYER_NAME : item.buyer_name,
+                    PERCENTAGE_OF_FOB_USD: item.fob_percentage,
+                    PERCENTAGE_OF_STD_QUANTITY:item.std_quantity_percentage,
+                    FOB_USD:item.fob_usd,
+                    IEC:item.iec,
+                    UNIT_PRICE_USD:item.unit_price_usd,
+                    TOTAL_ASSESS_USD_PERCENTAGE:item.total_assess_usd_percentage
                 }))
 
                 interface ImportData {
@@ -349,7 +380,8 @@ export class Visual implements IVisual {
               requestBody = {
                 name: jsonString,
                 columnProperties:JSON.stringify(columnProperties)
-              };               
+              };    
+              console.log(requestBody)           
             }
             else{
                 console.log("Error")
