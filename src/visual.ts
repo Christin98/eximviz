@@ -5,6 +5,7 @@ import powerbi from "powerbi-visuals-api";
 // import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import "./../style/visual.less";
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import * as cloneDeep from 'lodash/cloneDeep';
 // import {currencyFormatter, numberFormatter,stringFormatter,percentageFomratter} from './formatText'
 
 
@@ -106,7 +107,8 @@ export class Visual implements IVisual {
     private element: HTMLElement;
     private gridOptions: GridOptions;
     private button: HTMLButtonElement;
-    private downloadservice : IDownloadService
+    private downloadservice : IDownloadService;
+    private columnApi : ColumnApi
 
     constructor(options: VisualConstructorOptions) {
     this.element = options.element;
@@ -121,6 +123,7 @@ export class Visual implements IVisual {
 }
 
     public update(options: VisualUpdateOptions) {
+        
         let dataView = options.dataViews[0];
         const settings = this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
@@ -218,9 +221,10 @@ export class Visual implements IVisual {
                 let jsonString;
                 let requestBody = {};
 
+
                 // Get column Properties
                 const columnApi: ColumnApi = this.gridOptions.columnApi;
-                var columnProperties = []
+                let columnProperties = []
                 var rowGropuFlag = false;
                 var columnState = columnApi.getColumnState();
                 for (let i = 0 ; i < columnState.length; i++ ){
@@ -263,7 +267,8 @@ export class Visual implements IVisual {
                     FOB_USD:item.fob_usd,
                     IEC:item.iec,
                     UNIT_PRICE_USD:item.unit_price_usd,
-                    TOTAL_ASSESS_USD_PERCENTAGE:item.total_assess_usd_percentage
+                    TOTAL_ASSESS_USD_PERCENTAGE:item.total_assess_usd_percentage,
+                    
                 }))
 
                 interface ImportData {
@@ -283,7 +288,8 @@ export class Visual implements IVisual {
                     "FOREIGN_PORT":string,
                     "UNIT_PRICE_USD":number,
                     "IEC":number,
-                    "TOTAL_ASSESS_USD_PERCENTAGE":number
+                    "TOTAL_ASSESS_USD_PERCENTAGE":number,
+                   
                 }
                 const jsonData: ImportData[] = [];
 
@@ -306,7 +312,8 @@ export class Visual implements IVisual {
                         PERCENTAGE_OF_STD_QUANTITY:extractedValues[i]?.PERCENTAGE_OF_STD_QUANTITY,
                         IEC:extractedValues[i]?.IEC,
                         UNIT_PRICE_USD:extractedValues[i]?.UNIT_PRICE_USD,
-                        TOTAL_ASSESS_USD_PERCENTAGE:extractedValues[i]?.TOTAL_ASSESS_USD_PERCENTAGE
+                        TOTAL_ASSESS_USD_PERCENTAGE:extractedValues[i]?.TOTAL_ASSESS_USD_PERCENTAGE,
+                        
                     }
                 
                 jsonData.push(entry)
@@ -320,11 +327,51 @@ export class Visual implements IVisual {
 
             else if (rowGropuFlag === true) {
             var allRowData = [];
+            let aggValues = [];
+
+            
+            
             this.gridOptions.api.forEachNode(function (node) {
+                const node_data = node.data;
+                const node_data_agg = node.parent.aggData
                 if(node.data != undefined){
                     allRowData.push(node.data);
-                }
+                    if(node.parent.aggData){ 
+                        Object.keys(node_data).forEach(function(key) {
+                            Object.keys(node_data_agg).forEach(function(key_agg) {
+                                if (key === key_agg) {
+                                    node.data[key+"_agg"] = node_data_agg[key_agg].toFixed(4)
+                                    aggValues.push(key+"_agg")
+
+                                }
+                            });
+                        }); 
+                    }
+                    node.data[""] = ""
+
+                }                   
             });
+            console.log(allRowData)
+            let aggValuesSet = new Set(aggValues)
+            const aggValueArray = Array.from(aggValuesSet)
+            const colLen = columnProperties.length;
+          
+
+
+            for(var i = 0; i<aggValueArray.length; i++){
+                if (aggValueArray[i]) {
+                    columnProperties.push({
+                        "columnName": aggValueArray[i].toUpperCase(),
+                        "rowIndex": i+colLen
+                    });
+                }
+            }
+            columnProperties.push({
+                "columnName": "",
+                "rowIndex":  columnProperties.length
+            });
+            console.log(columnProperties)
+            
             const jsonData1: string = JSON.stringify(allRowData);
             const jsonData2 :any = JSON.parse(jsonData1);
             interface ImportData {
@@ -336,6 +383,9 @@ export class Visual implements IVisual {
                 "INDIAN_PORT": string,
                 "TOTAL_ASSESS_USD": number,
                 "STD_QUANTITY": number,
+                "STD_QUANTITY_AGG":string,
+                "TOTAL_ASSESS_USD_AGG":string,
+                "UNIT_PRICE_USD_AGG":string,
                 "EXPORTER_NAME": string,
                 "BUYER_NAME":string,
                 "PERCENTAGE_OF_FOB_USD":number,
@@ -345,6 +395,7 @@ export class Visual implements IVisual {
                 "UNIT_PRICE_USD":number,
                 "IEC":number,
                 "TOTAL_ASSESS_USD_PERCENTAGE":number
+                "":string
             }
             const extractedValues = jsonData2.map(item => {
                 const entry: Partial<ImportData> = {};
@@ -366,7 +417,12 @@ export class Visual implements IVisual {
                 if ('iec' in item) entry.IEC = item.iec || null;
                 if ('unit_price_usd' in item) entry.UNIT_PRICE_USD = item.unit_price_usd || null;
                 if ('total_assess_usd_percentage' in item) entry.TOTAL_ASSESS_USD_PERCENTAGE = item.total_assess_usd_percentage || null;
-              
+                if ('std_quantity_agg' in item) entry.STD_QUANTITY_AGG = item.std_quantity_agg || null;
+                if ('total_assess_usd_agg' in item) entry.TOTAL_ASSESS_USD_AGG = item.total_assess_usd_agg || null;
+                if ('unit_price_usd_agg' in item) entry.UNIT_PRICE_USD_AGG = item.unit_price_usd_agg || null;
+
+
+                if ("" in item) entry[""] = "";
                 return entry as ImportData;
               });
               
@@ -380,8 +436,7 @@ export class Visual implements IVisual {
               requestBody = {
                 name: jsonString,
                 columnProperties:JSON.stringify(columnProperties)
-              };    
-              console.log(requestBody)           
+              };            
             }
             else{
                 console.log("Error")
