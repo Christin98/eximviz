@@ -426,7 +426,8 @@ export class Visual implements IVisual {
                 "FOREIGN_PORT":string,
                 "UNIT_PRICE_USD":number,
                 "IEC":number,
-                "TOTAL_ASSESS_USD_PERCENTAGE":number
+                "TOTAL_ASSESS_USD_PERCENTAGE":number,
+                "TOTAL_DUTY_PAID": number,
                 "":string
                 "index":number
             }
@@ -453,6 +454,7 @@ export class Visual implements IVisual {
                 if ('std_quantity_agg' in item) entry.STD_QUANTITY_AGG = item.std_quantity_agg || null;
                 if ('total_assess_usd_agg' in item) entry.TOTAL_ASSESS_USD_AGG = item.total_assess_usd_agg || null;
                 if ('unit_price_usd_agg' in item) entry.UNIT_PRICE_USD_AGG = item.unit_price_usd_agg || null;
+                if ('total_duty_paid' in item) entry.TOTAL_DUTY_PAID = item.TOTAL_DUTY_PAID || null;
                 if ('index' in item) entry.index = item.index ;
 
 
