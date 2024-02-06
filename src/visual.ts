@@ -224,6 +224,14 @@ export class Visual implements IVisual {
 
                 // Get column Properties
                 const columnApi: ColumnApi = this.gridOptions.columnApi;
+                const paginationPageSize = this.gridOptions.paginationPageSize; 
+                const currentPage = this.gridOptions.api.paginationGetCurrentPage();
+                console.log("current page",currentPage)
+                const startRow = currentPage * paginationPageSize;
+                const startrowgroup = startRow +1;
+                console.log("startRow",startRow)
+                const endRow = Math.min(startRow + paginationPageSize, this.gridOptions.api.getDisplayedRowCount());
+                console.log(endRow)
                 let columnProperties = []
                 var rowGropuFlag = false;
                 var columnState = columnApi.getColumnState();
@@ -237,10 +245,6 @@ export class Visual implements IVisual {
                 }
                
                 if(rowGropuFlag === false){
-                const paginationPageSize = this.gridOptions.paginationPageSize; 
-                const currentPage = this.gridOptions.api.paginationGetCurrentPage();
-                const startRow = currentPage * paginationPageSize;
-                const endRow = Math.min(startRow + paginationPageSize, this.gridOptions.api.getDisplayedRowCount());
                 const displayedData = []
                     for (let i = startRow; i < endRow; i++) {
                         const rowNode = this.gridOptions.api.getDisplayedRowAtIndex(i);
@@ -326,52 +330,77 @@ export class Visual implements IVisual {
             }
 
             else if (rowGropuFlag === true) {
-            var allRowData = [];
-            let aggValues = [];
-
-            
-            
-            this.gridOptions.api.forEachNode(function (node) {
-                const node_data = node.data;
-                const node_data_agg = node.parent.aggData
-                if(node.data != undefined){
-                    allRowData.push(node.data);
-                    if(node.parent.aggData){ 
-                        Object.keys(node_data).forEach(function(key) {
-                            Object.keys(node_data_agg).forEach(function(key_agg) {
-                                if (key === key_agg) {
-                                    node.data[key+"_agg"] = node_data_agg[key_agg].toFixed(4)
-                                    aggValues.push(key+"_agg")
-
-                                }
-                            });
-                        }); 
+                let previousImporterName = '';
+                let indexCounter = 0;
+                let columnNameIndex;
+                let currentColumnNameIndex;
+                let currentImporterName;
+                for (let i = 0; i < columnProperties.length; i++) {
+                    if (columnProperties[i]["rowIndex"] == 0) {
+                        columnNameIndex = columnProperties[i]["columnName"].toLowerCase();
                     }
-                    node.data[""] = ""
-
-                }                   
-            });
-            console.log(allRowData)
-            let aggValuesSet = new Set(aggValues)
-            const aggValueArray = Array.from(aggValuesSet)
-            const colLen = columnProperties.length;
-          
-
-
-            for(var i = 0; i<aggValueArray.length; i++){
-                if (aggValueArray[i]) {
-                    columnProperties.push({
-                        "columnName": aggValueArray[i].toUpperCase(),
-                        "rowIndex": i+colLen
-                    });
                 }
-            }
-            columnProperties.push({
-                "columnName": "",
-                "rowIndex":  columnProperties.length
-            });
-            console.log(columnProperties)
-            
+
+                var allRowData = [];
+                let aggValues = [];
+
+                this.gridOptions.api.forEachNode(function (node) {
+                    if (node && node.data) {
+                        currentColumnNameIndex = columnNameIndex;
+                        currentImporterName = node.data[currentColumnNameIndex]
+                
+                        if (currentImporterName !== undefined && currentImporterName !== previousImporterName) {
+                            indexCounter++;
+                        }              
+                        node.data["index"] = indexCounter;
+                        allRowData.push(node.data);
+                
+                        const node_data_agg = node.parent ? node.parent.aggData : null;
+                
+                        if (node_data_agg) {
+                            Object.keys(node.data).forEach(function (key) {
+                                Object.keys(node_data_agg).forEach(function (key_agg) {
+                                    if (key === key_agg) {
+                                        node.data[key + "_agg"] = node_data_agg[key_agg].toFixed(4);
+                                        aggValues.push(key + "_agg");
+                                    }
+                                });
+                            });
+                        }
+                        node.data[""] = "";
+                    }
+                    if(node.data != undefined){
+                        console.log(currentColumnNameIndex)
+                        previousImporterName = node.data[currentColumnNameIndex];
+                    }
+                    // console.log("previous:",previousImporterName)
+                });
+
+                console.log(allRowData);
+
+                let aggValuesSet = new Set(aggValues);
+                const aggValueArray = Array.from(aggValuesSet);
+                const colLen = columnProperties.length;
+
+                for (var i = 0; i < aggValueArray.length; i++) {
+                    if (aggValueArray[i]) {
+                        columnProperties.push({
+                            "columnName": aggValueArray[i].toUpperCase(),
+                            "rowIndex": i + colLen
+                        });
+                    }
+                }
+                columnProperties.push({
+                    "columnName": "index",
+                    "rowIndex": columnProperties.length
+                })
+                const collenp = columnProperties.length
+                columnProperties.push({
+                    "columnName": "",
+                    "rowIndex": collenp
+                });
+
+                console.log(columnProperties);
             const jsonData1: string = JSON.stringify(allRowData);
             const jsonData2 :any = JSON.parse(jsonData1);
             interface ImportData {
@@ -396,6 +425,7 @@ export class Visual implements IVisual {
                 "IEC":number,
                 "TOTAL_ASSESS_USD_PERCENTAGE":number
                 "":string
+                "index":number
             }
             const extractedValues = jsonData2.map(item => {
                 const entry: Partial<ImportData> = {};
@@ -420,6 +450,7 @@ export class Visual implements IVisual {
                 if ('std_quantity_agg' in item) entry.STD_QUANTITY_AGG = item.std_quantity_agg || null;
                 if ('total_assess_usd_agg' in item) entry.TOTAL_ASSESS_USD_AGG = item.total_assess_usd_agg || null;
                 if ('unit_price_usd_agg' in item) entry.UNIT_PRICE_USD_AGG = item.unit_price_usd_agg || null;
+                if ('index' in item) entry.index = item.index ;
 
 
                 if ("" in item) entry[""] = "";
@@ -435,8 +466,10 @@ export class Visual implements IVisual {
               jsonString = JSON.stringify(jsonData);   
               requestBody = {
                 name: jsonString,
-                columnProperties:JSON.stringify(columnProperties)
-              };            
+                columnProperties:JSON.stringify(columnProperties),
+                pagination: JSON.stringify({"startpage":startrowgroup,"endrow":endRow})
+              };   
+              console.log(requestBody)         
             }
             else{
                 console.log("Error")
