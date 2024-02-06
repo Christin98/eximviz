@@ -73,7 +73,7 @@ const defaultGridConfig = {
           { statusPanel: "agFilteredRowCountComponent", align: "right" }
         ]
       },
-      overlayLoadingTemplate: '<div aria-live="polite" aria-atomic="true" style="position:absolute;top:0;left:0;right:0; bottom:0; background: url(https://raw.githubusercontent.com/n3r4zzurr0/svg-spinners/main/svg-css/12-dots-scale-rotate.svg) center no-repeat" aria-label="loading"></div>',
+      overlayLoadingTemplate: '<div aria-live="polite" aria-atomic="true" style="position:absolute;top:0;left:0;right:0; bottom:0; background: url(https://raw.githubusercontent.com/Christin98/eximviz/feature/groupbyexcel/src/imageloader/loading-spinner.svg) center no-repeat" aria-label="loading"></div>',
       overlayNoRowsTemplate: '<span aria-live="polite" aria-atomic="true" style="padding: 10px; border: 2px solid #666; background: #55AA77;"\'No rows\' to show.</span>',
     defaultColDef: {
         rowGroup:false,
