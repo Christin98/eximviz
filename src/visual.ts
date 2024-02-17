@@ -4,7 +4,6 @@ import '@babel/polyfill';
 import powerbi from "powerbi-visuals-api";
 // import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import "./../style/visual.less";
-const svgFilePath = require('./imageloader/loading-spinner.svg') as string;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 // import {currencyFormatter, numberFormatter,stringFormatter,percentageFomratter} from './formatText'
 
@@ -12,10 +11,10 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
-import IDownloadService = powerbi.extensibility.IDownloadService;
+// import IDownloadService = powerbi.extensibility.IDownloadService;
 
 
-import { Grid, ColDef, GridOptions, ValueFormatterService, GridApi, ColumnApi } from 'ag-grid-community';
+import { ColDef, GridOptions, createGrid, GridApi } from 'ag-grid-community';
 import 'ag-grid-enterprise'
 import { VisualSettings } from './settings';
 import { LicenseManager } from 'ag-grid-enterprise';
@@ -64,7 +63,6 @@ const defaultGridConfig = {
     suppressRowClickSelection: true,
     suppressAggFuncInHeader: true,
     suppressExcelExport: true,
-    getColumnState: true,
     blockLoadDebounceMillis: DEFAULT_DEBOUNCE_MS,
     statusBar: {
         statusPanels: [
@@ -76,7 +74,6 @@ const defaultGridConfig = {
       overlayLoadingTemplate: '<div aria-live="polite" aria-atomic="true" style="position:absolute;top:0;left:0;right:0; bottom:0; background: url(https://raw.githubusercontent.com/Christin98/eximviz/feature/groupbyexcel/src/imageloader/loading-spinner.svg) center no-repeat" aria-label="loading"></div>',
       overlayNoRowsTemplate: '<span aria-live="polite" aria-atomic="true" style="padding: 10px; border: 2px solid #666; background: #55AA77;"\'No rows\' to show.</span>',
     defaultColDef: {
-        rowGroup:false,
         editable:false,
         enableRowGroup: true,
         enablePivot: false,
@@ -108,15 +105,15 @@ export class Visual implements IVisual {
     private visualSettings: VisualSettings;
     private element: HTMLElement;
     private gridOptions: GridOptions;
+    private api: GridApi
     private button: HTMLButtonElement;
-    private downloadservice : IDownloadService;
-    private columnApi : ColumnApi
+    // private downloadservice : IDownloadService;
 
     constructor(options: VisualConstructorOptions) {
     this.element = options.element;
     this.element.style.display = "flex"
     this.element.style.flexDirection = "column"
-    this.downloadservice = options.host.downloadService
+    // this.downloadservice = options.host.downloadService
     this.element.classList.add('ag-theme-balham');
     this.button = document.createElement('button')
     this.button.innerHTML = 'Download Excel'
@@ -180,7 +177,7 @@ export class Visual implements IVisual {
                 else
                     columnDef.valueFormatter = numberFormatter;
                 // aggereagtion of values
-                columnDef.enableValue = true
+                // columnDef.enableValue = true
                 columnDef.cellDataType = 'number'
                 columnDef.aggFunc = 'sum'
             } else {
@@ -217,27 +214,27 @@ export class Visual implements IVisual {
                 rowData: rowData,
             } as GridOptions;
             
-            new Grid(this.element, this.gridOptions);
+            this.api = createGrid(this.element, this.gridOptions);
+
             this.button.onclick = () => {
 
                 let jsonString;
                 let requestBody = {};
 
-                this.gridOptions.api.showLoadingOverlay();
+                this.api.showLoadingOverlay();
 
                 // Get column Properties
-                const columnApi: ColumnApi = this.gridOptions.columnApi;
                 const paginationPageSize = this.gridOptions.paginationPageSize; 
-                const currentPage = this.gridOptions.api.paginationGetCurrentPage();
+                const currentPage = this.api.paginationGetCurrentPage();
                 console.log("current page",currentPage)
                 const startRow = currentPage * paginationPageSize;
                 const startrowgroup = startRow +1;
                 console.log("startRow",startRow)
-                const endRow = Math.min(startRow + paginationPageSize, this.gridOptions.api.getDisplayedRowCount());
+                const endRow = Math.min(startRow + paginationPageSize, this.api.getDisplayedRowCount());
                 console.log(endRow)
                 let columnProperties = []
                 var rowGropuFlag = false;
-                var columnState = columnApi.getColumnState();
+                var columnState = this.api.getColumnState();
                 for (let i = 0 ; i < columnState.length; i++ ){
                     if(columnState[i]['rowGroup'] === true){
                         rowGropuFlag = true;
@@ -250,7 +247,7 @@ export class Visual implements IVisual {
                 if(rowGropuFlag === false){
                 const displayedData = []
                     for (let i = startRow; i < endRow; i++) {
-                        const rowNode = this.gridOptions.api.getDisplayedRowAtIndex(i);
+                        const rowNode = this.api.getDisplayedRowAtIndex(i);
                         displayedData.push(rowNode.data);
                     }                     
             
@@ -267,15 +264,20 @@ export class Visual implements IVisual {
                     INDIAN_PORT: item.indian_port,
                     TOTAL_ASSESS_USD: item.total_assess_usd,
                     STD_QUANTITY: item.std_quantity,
+                    QUANTITY: item.quantity,
                     EXPORTER_NAME :item.exporter_name,
                     BUYER_NAME : item.buyer_name,
-                    PERCENTAGE_OF_FOB_USD: item.fob_percentage,
+                    FOB_PERCENTAGE: item.fob_percentage,
                     PERCENTAGE_OF_STD_QUANTITY:item.std_quantity_percentage,
+                    QUANTITY_PERCENTAGE: item.quantity_percentage,
                     FOB_USD:item.fob_usd,
                     IEC:item.iec,
                     UNIT_PRICE_USD:item.unit_price_usd,
-                    TOTAL_ASSESS_USD_PERCENTAGE:item.total_assess_usd_percentage,
-                    
+                    TOTAL_DUTY_PAID:item.total_duty_paid,
+                    TOTAL_ASSESS_VALUE_PERCENTAGE:item.total_assess_value_percentage,
+                    COMMERCIAL_QUANTITY:item.commercial_quantity,
+                    CUSTOM:item.custom,
+                    GROSS_WEIGHT:item.gross_weight,
                 }))
 
                 interface ImportData {
@@ -287,16 +289,20 @@ export class Visual implements IVisual {
                     "INDIAN_PORT": string,
                     "TOTAL_ASSESS_USD": number,
                     "STD_QUANTITY": number,
+                    "QUANTITY": number,
                     "EXPORTER_NAME": string,
                     "BUYER_NAME":string,
-                    "PERCENTAGE_OF_FOB_USD":number,
+                    "FOB_PERCENTAGE":number,
                     "PERCENTAGE_OF_STD_QUANTITY": number,
                     "FOB_USD":number,
                     "FOREIGN_PORT":string,
                     "UNIT_PRICE_USD":number,
                     "IEC":number,
-                    "TOTAL_ASSESS_USD_PERCENTAGE":number,
-                   
+                    "TOTAL_DUTY_PAID": number,
+                    "TOTAL_ASSESS_VALUE_PERCENTAGE":number,
+                    "COMMERCIAL_QUANTITY":number,
+                    "CUSTOM":string,
+                    "GROSS_WEIGHT":number,
                 }
                 const jsonData: ImportData[] = [];
 
@@ -310,17 +316,21 @@ export class Visual implements IVisual {
                         ORIGIN_COUNTRY: extractedValues[i]?.ORIGIN_COUNTRY ,
                         PORT_OF_SHIPMENT: extractedValues[i]?.PORT_OF_SHIPMENT ,
                         STD_QUANTITY: extractedValues[i]?.STD_QUANTITY ,
+                        QUANTITY: extractedValues[i]?.QUANTITY ,
                         SUPPLIER_NAME: extractedValues[i]?.SUPPLIER_NAME ,
                         TOTAL_ASSESS_USD: extractedValues[i]?.TOTAL_ASSESS_USD,
                         EXPORTER_NAME:extractedValues[i]?.EXPORTER_NAME,
                         BUYER_NAME:extractedValues[i]?.BUYER_NAME,
-                        PERCENTAGE_OF_FOB_USD:extractedValues[i]?.PERCENTAGE_OF_FOB_USD,
+                        FOB_PERCENTAGE:extractedValues[i]?.FOB_PERCENTAGE,
                         FOB_USD:extractedValues[i]?.FOB_USD,
                         PERCENTAGE_OF_STD_QUANTITY:extractedValues[i]?.PERCENTAGE_OF_STD_QUANTITY,
                         IEC:extractedValues[i]?.IEC,
                         UNIT_PRICE_USD:extractedValues[i]?.UNIT_PRICE_USD,
-                        TOTAL_ASSESS_USD_PERCENTAGE:extractedValues[i]?.TOTAL_ASSESS_USD_PERCENTAGE,
-                        
+                        TOTAL_DUTY_PAID: extractedValues[i]?.TOTAL_DUTY_PAID,
+                        TOTAL_ASSESS_VALUE_PERCENTAGE:extractedValues[i]?.TOTAL_ASSESS_VALUE_PERCENTAGE,
+                        COMMERCIAL_QUANTITY:extractedValues[i].COMMERCIAL_QUANTITY,
+                        CUSTOM : extractedValues[i].CUSTOM,
+                        GROSS_WEIGHT: extractedValues[i].GROSS_WEIGHT,
                     }
                 
                 jsonData.push(entry)
@@ -347,7 +357,7 @@ export class Visual implements IVisual {
                 var allRowData = [];
                 let aggValues = [];
 
-                this.gridOptions.api.forEachNode(function (node) {
+                this.api.forEachNode(function (node) {
                     if (node && node.data) {
                         currentColumnNameIndex = columnNameIndex;
                         currentImporterName = node.data[currentColumnNameIndex]
@@ -416,18 +426,29 @@ export class Visual implements IVisual {
                 "TOTAL_ASSESS_USD": number,
                 "STD_QUANTITY": number,
                 "STD_QUANTITY_AGG":string,
+                "QUANTITY": number,
+                "QUANTITY_AGG":string,
                 "TOTAL_ASSESS_USD_AGG":string,
                 "UNIT_PRICE_USD_AGG":string,
                 "EXPORTER_NAME": string,
                 "BUYER_NAME":string,
-                "PERCENTAGE_OF_FOB_USD":number,
-                "PERCENTAGE_OF_STD_QUANTITY": number,
+                "FOB_PERCENTAGE":number,
+                "FOB_PERCENTAGE_AGG":string,
+                "QUANTITY_PERCENTAGE": number,
                 "FOB_USD":number,
+                "FOB_USD_AGG":string,
                 "FOREIGN_PORT":string,
                 "UNIT_PRICE_USD":number,
                 "IEC":number,
-                "TOTAL_ASSESS_USD_PERCENTAGE":number,
+                "TOTAL_ASSESS_VALUE_PERCENTAGE":number,
+                "TOTAL_ASSESS_VALUE_PERCENTAGE_AGG":string,
                 "TOTAL_DUTY_PAID": number,
+                "TOTAL_DUTY_PAID_AGG": string,
+                "COMMERCIAL_QUANTITY":number,
+                "COMMERCIAL_QUANTITY_AGG":string,
+                "CUSTOM":string,
+                "GROSS_WEIGHT":number,
+                "GROSS_WEIGHT_AGG":string,
                 "":string
                 "index":number
             }
@@ -442,22 +463,31 @@ export class Visual implements IVisual {
                 if ('foreign_port' in item) entry.FOREIGN_PORT = item.foreign_port || null;
                 if ('indian_port' in item) entry.INDIAN_PORT = item.indian_port || null;
                 if ('total_assess_usd' in item) entry.TOTAL_ASSESS_USD = item.total_assess_usd || null;
+                if ('total_duty_paid' in item) entry.TOTAL_DUTY_PAID = item.total_duty_paid || null;
                 if ('std_quantity' in item) entry.STD_QUANTITY = item.std_quantity || null;
+                if ('quantity' in item) entry.QUANTITY = item.quantity || null;
                 if ('exporter_name' in item) entry.EXPORTER_NAME = item.exporter_name || null;
                 if ('buyer_name' in item) entry.BUYER_NAME = item.buyer_name || null;
-                if ('fob_percentage' in item) entry.PERCENTAGE_OF_FOB_USD = item.fob_percentage || null;
-                if ('std_quantity_percentage' in item) entry.PERCENTAGE_OF_STD_QUANTITY = item.std_quantity_percentage || null;
+                if ('fob_percentage' in item) entry.FOB_PERCENTAGE = item.fob_percentage || null;
+                if ('fob_percentage_agg' in item) entry.FOB_PERCENTAGE_AGG = item.fob_percentage_agg || null;
+                if ('quantity_percentage' in item) entry.QUANTITY_PERCENTAGE = item.std_quantity_percentage || null;
                 if ('fob_usd' in item) entry.FOB_USD = item.fob_usd || null;
+                if ('fob_usd_agg' in item) entry.FOB_USD_AGG = item.fob_usd_agg || null;
                 if ('iec' in item) entry.IEC = item.iec || null;
                 if ('unit_price_usd' in item) entry.UNIT_PRICE_USD = item.unit_price_usd || null;
-                if ('total_assess_usd_percentage' in item) entry.TOTAL_ASSESS_USD_PERCENTAGE = item.total_assess_usd_percentage || null;
+                if ('total_assess_value_percentage' in item) entry.TOTAL_ASSESS_VALUE_PERCENTAGE = item.total_assess_value_percentage || null;
+                if ('total_assess_value_percentage_agg' in item) entry.TOTAL_ASSESS_VALUE_PERCENTAGE_AGG = item.total_assess_value_percentage_agg || null;
                 if ('std_quantity_agg' in item) entry.STD_QUANTITY_AGG = item.std_quantity_agg || null;
+                if ('quantity_agg' in item) entry.QUANTITY_AGG = item.quantity_agg || null;
                 if ('total_assess_usd_agg' in item) entry.TOTAL_ASSESS_USD_AGG = item.total_assess_usd_agg || null;
                 if ('unit_price_usd_agg' in item) entry.UNIT_PRICE_USD_AGG = item.unit_price_usd_agg || null;
-                if ('total_duty_paid' in item) entry.TOTAL_DUTY_PAID = item.TOTAL_DUTY_PAID || null;
+                if ('total_duty_paid_agg' in item) entry.TOTAL_DUTY_PAID_AGG = item.total_duty_paid_agg || null;
+                if ('commercial_quantity' in item) entry.COMMERCIAL_QUANTITY = item.commercial_quantity || null;
+                if ('commercial_quantity_agg' in item) entry.COMMERCIAL_QUANTITY_AGG = item.commercial_quantity_agg || null;
+                if ('custom' in item) entry.CUSTOM = item.custom || null;
+                if ('gross_weight' in item) entry.GROSS_WEIGHT = item.gross_weight || null;
+                if ('gross_weight_agg' in item) entry.GROSS_WEIGHT_AGG = item.gross_weight_agg || null;
                 if ('index' in item) entry.index = item.index ;
-
-
                 if ("" in item) entry[""] = "";
                 return entry as ImportData;
               });
@@ -474,7 +504,7 @@ export class Visual implements IVisual {
                 columnProperties:JSON.stringify(columnProperties),
                 pagination: JSON.stringify({"startpage":startrowgroup,"endrow":endRow})
               };   
-              console.log(requestBody)         
+              console.log(requestBody) 
             }
             else{
                 console.log("Error")
@@ -488,16 +518,15 @@ export class Visual implements IVisual {
                 body: JSON.stringify(requestBody)
             }).then(response => response.text())
             .then(result => {
-                this.gridOptions.api.hideOverlay();
+                this.api.hideOverlay();
                 const url = `https://powerbidownload.azurewebsites.net${result}`
                 this.host.launchUrl(url)})
             .catch(error => console.log('error', error));
             }
         } else {
-            let api = this.gridOptions.api;
-            api.setColumnDefs(columnDefs);
-            api.setRowData(rowData);
-            api.sizeColumnsToFit();
+            this.api.setGridOption("columnDefs",columnDefs);
+            this.api.setGridOption("rowData",rowData);
+            this.api.sizeColumnsToFit();
         }
     }
 

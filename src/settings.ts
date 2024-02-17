@@ -1,6 +1,6 @@
 "use strict";
 
-import {dataViewObjectsParser} from "powerbi-visuals-utils-dataviewutils";
+import {dataViewObjectsParser} from "powerbi-visuals-utils-dataviewutils/lib/index";
 import DataViewObjectsParser =  dataViewObjectsParser.DataViewObjectsParser;
 
 export class GridSettings {
