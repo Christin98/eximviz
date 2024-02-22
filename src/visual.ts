@@ -509,7 +509,7 @@ export class Visual implements IVisual {
             else{
                 console.log("Error")
             }
-            const downloadlink = `https://powerbidownload.azurewebsites.net/api/downloadlink`;
+            const downloadlink = `https://powerbidownload-test-duplicate.azurewebsites.net`;
             fetch(downloadlink,{
                 method: 'POST',
                 headers: {
@@ -519,7 +519,7 @@ export class Visual implements IVisual {
             }).then(response => response.text())
             .then(result => {
                 this.api.hideOverlay();
-                const url = `https://powerbidownload.azurewebsites.net${result}`
+                const url = `https://powerbidownload-test-duplicate.azurewebsites.net${result}`
                 this.host.launchUrl(url)})
             .catch(error => console.log('error', error));
             }
