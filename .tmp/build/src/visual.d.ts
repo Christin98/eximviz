@@ -10,9 +10,8 @@ export declare class Visual implements IVisual {
     private visualSettings;
     private element;
     private gridOptions;
+    private api;
     private button;
-    private downloadservice;
-    private columnApi;
     constructor(options: VisualConstructorOptions);
     update(options: VisualUpdateOptions): void;
 }

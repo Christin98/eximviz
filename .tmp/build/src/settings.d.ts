@@ -1,4 +1,4 @@
-import { dataViewObjectsParser } from "powerbi-visuals-utils-dataviewutils";
+import { dataViewObjectsParser } from "powerbi-visuals-utils-dataviewutils/lib/index";
 import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
 export declare class GridSettings {
     gridKey: string;
