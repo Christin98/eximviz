@@ -12,6 +12,7 @@ export declare class Visual implements IVisual {
     private gridOptions;
     private api;
     private button;
+    private dateColumnField;
     constructor(options: VisualConstructorOptions);
     update(options: VisualUpdateOptions): void;
 }
