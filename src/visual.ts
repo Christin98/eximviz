@@ -2,19 +2,22 @@
 
 import '@babel/polyfill';
 import powerbi from "powerbi-visuals-api";
-// import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
+import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import "./../style/visual.less";
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
-
+import IVisualEventService = powerbi.extensibility.IVisualEventService;
+import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import IColorPalette = powerbi.extensibility.IColorPalette;
+import ILocalizationManager = powerbi.extensibility.ILocalizationManager;
+import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
 
-
 import { ColDef, GridOptions, createGrid, GridApi } from 'ag-grid-community';
 import 'ag-grid-enterprise'
-import { VisualSettings } from './settings';
+import { VisualSettings, VisualFormattingSettingsModel } from './settings';
 import { LicenseManager } from 'ag-grid-enterprise';
 
 
@@ -101,6 +104,8 @@ const defaultGridConfig = {
 export class Visual implements IVisual {
     private host: IVisualHost;
     private visualSettings: VisualSettings;
+    private formattingSettings: VisualFormattingSettingsModel;
+    private formattingSettingsService: FormattingSettingsService;
     private element: HTMLElement;
     private gridOptions: GridOptions;
     private api: GridApi
@@ -108,27 +113,56 @@ export class Visual implements IVisual {
     private allRowData: any[] = [];
     private columnDefinitions: ColDef[] = [];
     private isFetchingMoreData: boolean = false;
+    private events: IVisualEventService;
+    private selectionManager: ISelectionManager;
+    private colorPalette: IColorPalette;
+    private localizationManager: ILocalizationManager;
 
     constructor(options: VisualConstructorOptions) {
+    this.host = options.host;
     this.element = options.element;
+
+    // Initialize formatting settings service
+    this.formattingSettingsService = new FormattingSettingsService();
+
+    // Initialize event service for rendering events
+    this.events = this.host.eventService;
+
+    // Initialize selection manager for interactions
+    this.selectionManager = this.host.createSelectionManager();
+
+    // Initialize color palette
+    this.colorPalette = this.host.colorPalette;
+
+    // Initialize localization manager
+    this.localizationManager = this.host.createLocalizationManager();
+
     this.element.style.display = "flex"
     this.element.style.flexDirection = "column"
     this.element.classList.add('ag-theme-balham');
+
+    // Set tabindex for keyboard navigation
+    this.element.setAttribute('tabindex', '0');
+
     this.button = document.createElement('button')
     this.button.innerHTML = 'Download Excel'
     this.element.appendChild(this.button);
-    this.host = options.host;
 }
 
     public update(options: VisualUpdateOptions) {
+        // Signal rendering start
+        this.events.renderingStarted(options);
+
         let dataView = options.dataViews[0];
         console.log(dataView)
 
         if (!dataView || !dataView.table) {
+            this.events.renderingFinished(options);
             return;
         }
 
         this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
+        this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualFormattingSettingsModel, dataView);
 
         // Check if this is a new data load (reset accumulated data)
         if (options.type === 2 /* Data */) {
@@ -379,6 +413,23 @@ export class Visual implements IVisual {
             this.api.setGridOption("rowData",rowData);
             this.api.sizeColumnsToFit();
         }
+
+        // Signal rendering finished
+        this.events.renderingFinished(options);
     }
 
+    /**
+     * Returns properties pane formatting model content hierarchies, properties and latest formatting values, Then populate properties pane.
+     * This method is called once every time we open properties pane or when the user edit any format property.
+     */
+    public getFormattingModel(): powerbi.visuals.FormattingModel {
+        return this.formattingSettingsService.buildFormattingModel(this.formattingSettings);
+    }
+
+    /**
+     * This function gets called by the update function above.
+     */
+    public destroy(): void {
+        // Perform any cleanup tasks here
+    }
 }

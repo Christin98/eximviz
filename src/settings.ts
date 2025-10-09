@@ -28,7 +28,13 @@
 
 import {dataViewObjectsParser} from "powerbi-visuals-utils-dataviewutils";
 import DataViewObjectsParser =  dataViewObjectsParser.DataViewObjectsParser;
+import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 
+import FormattingSettingsCard = formattingSettings.SimpleCard;
+import FormattingSettingsSlice = formattingSettings.Slice;
+import FormattingSettingsModel = formattingSettings.Model;
+
+// Legacy settings - keeping for backward compatibility
 export class GridSettings {
     public gridKey: string = 'For_Trialinw_ag-Grid_Only-Not_For_Real_Development_Or_Production_Projects-Valid_Until-09_November_2023_[v2]_MTY5OTUzMjQzNjkxMg==c466ad8d9540a16242ffa5defb3dc3c9';
     public gridFilter: boolean = true;
@@ -53,6 +59,37 @@ export class GridSettings {
 
 export class VisualSettings extends DataViewObjectsParser {
     public grid: GridSettings = new GridSettings();
+}
+
+/**
+ * Grid Configuration Card - Modern Format Pane
+ */
+class GridConfigurationCard extends FormattingSettingsCard {
+    gridKey = new formattingSettings.TextInput({
+        name: "gridKey",
+        displayName: "AG Grid License Key",
+        value: 'For_Trialinw_ag-Grid_Only-Not_For_Real_Development_Or_Production_Projects-Valid_Until-09_November_2023_[v2]_MTY5OTUzMjQzNjkxMg==c466ad8d9540a16242ffa5defb3dc3c9',
+        placeholder: "Enter license key"
+    });
+
+    gridFilter = new formattingSettings.ToggleSwitch({
+        name: "gridFilter",
+        displayName: "Enable Filters",
+        value: true
+    });
+
+    name: string = "gridConfiguration";
+    displayName: string = "Grid Configuration";
+    slices: Array<FormattingSettingsSlice> = [this.gridKey, this.gridFilter];
+}
+
+/**
+ * Visual Formatting Settings Model - Modern Format Pane
+ */
+export class VisualFormattingSettingsModel extends FormattingSettingsModel {
+    gridConfigurationCard = new GridConfigurationCard();
+
+    cards = [this.gridConfigurationCard];
 }
 
 // import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";

@@ -84,6 +84,20 @@
   "supportsLandingPage": true,
   "supportsEmptyDataView": true,
   "suppressDefaultTitle": true,
+  "supportsHighlight": true,
+  "supportsSynchronizingFilterState": true,
+  "supportsMultiVisualSelection": true,
+  "supportsKeyboardFocus": true,
+  "sorting": {
+    "default": {}
+  },
+  "tooltips": {
+    "supportedTypes": {
+      "default": true,
+      "canvas": true
+    },
+    "roles": ["Values"]
+  },
   "privileges": [ 
     {
       "name": "ExportContent",
