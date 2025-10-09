@@ -105,6 +105,9 @@ export class Visual implements IVisual {
     private gridOptions: GridOptions;
     private api: GridApi
     private button: HTMLButtonElement;
+    private allRowData: any[] = [];
+    private columnDefinitions: ColDef[] = [];
+    private isFetchingMoreData: boolean = false;
 
     constructor(options: VisualConstructorOptions) {
     this.element = options.element;
@@ -120,7 +123,19 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         let dataView = options.dataViews[0];
         console.log(dataView)
+
+        if (!dataView || !dataView.table) {
+            return;
+        }
+
         this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
+
+        // Check if this is a new data load (reset accumulated data)
+        if (options.type === 2 /* Data */) {
+            console.log("New data load - resetting accumulated data");
+            this.allRowData = [];
+            this.isFetchingMoreData = false;
+        }
 
         const currencyFormatter = (params) => {  return '$' + formatNumber(params.value);}
         const numberFormatter = (params) => { return '' + formatNumber(params.value)}
@@ -194,10 +209,17 @@ export class Visual implements IVisual {
 
         LicenseManager.setLicenseKey(this.visualSettings.grid.gridKey)
 
-        const rowData = dataView.table.rows.map((row, rowIndex) => {
+        // Store column definitions for later use
+        if (this.columnDefinitions.length === 0) {
+            this.columnDefinitions = columnDefs;
+        }
+
+        // Convert current segment rows to row data
+        const currentSegmentRows = dataView.table.rows.map((row, rowIndex) => {
+            const currentRowIndex = this.allRowData.length + rowIndex;
             const rowData = {
                 // Add a unique identifier for the checkbox column
-                checkboxColumn: rowIndex, // Use a unique identifier, e.g., row index
+                checkboxColumn: currentRowIndex, // Use a unique identifier, e.g., row index
             };
             row.forEach((item, i) => {
                 rowData[columnDefs[i].field] = item;
@@ -249,6 +271,27 @@ export class Visual implements IVisual {
             });
             return rowData;
         });
+
+        // Accumulate row data from current segment
+        this.allRowData = this.allRowData.concat(currentSegmentRows);
+        console.log(`Loaded ${currentSegmentRows.length} rows in this segment. Total accumulated: ${this.allRowData.length}`);
+
+        // Check if there's more data to fetch
+        const hasMoreData = dataView.metadata && dataView.metadata.segment;
+
+        if (hasMoreData && !this.isFetchingMoreData) {
+            console.log("More data available - fetching next segment...");
+            this.isFetchingMoreData = true;
+            this.host.fetchMoreData();
+            // Don't update grid yet, wait for more data
+            return;
+        } else if (!hasMoreData) {
+            console.log(`All data loaded! Total rows: ${this.allRowData.length}`);
+            this.isFetchingMoreData = false;
+        }
+
+        // Update grid with all accumulated data
+        const rowData = this.allRowData;
 
         if(!this.gridOptions) {
             this.gridOptions = {
