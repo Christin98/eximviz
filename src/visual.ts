@@ -10,24 +10,13 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
-import IDownloadService = powerbi.extensibility.IDownloadService;
 
 
-import { Grid, ColDef, GridOptions, ValueFormatterService, createGrid, GridApi } from 'ag-grid-community';
+import { ColDef, GridOptions, createGrid, GridApi } from 'ag-grid-community';
 import 'ag-grid-enterprise'
 import { VisualSettings } from './settings';
 import { LicenseManager } from 'ag-grid-enterprise';
-import { Console } from 'console';
 
-
-var checkboxSelection = function (params) {
-    // we put checkbox on the name if we are not doing grouping
-    return params.columnApi.getRowGroupColumns().length === 0;
-  };
-  var headerCheckboxSelection = function (params) {
-    // we put checkbox on the name if we are not doing grouping
-    return params.columnApi.getRowGroupColumns().length === 0;
-  };
 
 const DEFAULT_DEBOUNCE_MS = 500;
 
@@ -85,7 +74,7 @@ const defaultGridConfig = {
     defaultColDef: {
         editable:false,
         enableRowGroup: true,
-        enablePivot: false,
+        enablePivot: true,
         enableValue: true,
         resizable: true,
         sortable: true,
@@ -116,13 +105,11 @@ export class Visual implements IVisual {
     private gridOptions: GridOptions;
     private api: GridApi
     private button: HTMLButtonElement;
-    private downloadservice : IDownloadService
 
     constructor(options: VisualConstructorOptions) {
     this.element = options.element;
     this.element.style.display = "flex"
     this.element.style.flexDirection = "column"
-    this.downloadservice = options.host.downloadService
     this.element.classList.add('ag-theme-balham');
     this.button = document.createElement('button')
     this.button.innerHTML = 'Download Excel'
@@ -133,7 +120,7 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         let dataView = options.dataViews[0];
         console.log(dataView)
-        const settings = this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
+        this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
         const currencyFormatter = (params) => {  return '$' + formatNumber(params.value);}
         const numberFormatter = (params) => { return '' + formatNumber(params.value)}
@@ -184,7 +171,8 @@ export class Visual implements IVisual {
                     columnDef.valueFormatter = percentageFormatter;
                 else
                     columnDef.valueFormatter = numberFormatter;
-                // columnDef.enableValue = true
+                columnDef.enableValue = true
+                columnDef.enablePivot = true
                 columnDef.cellDataType = 'number'
                 columnDef.aggFunc = 'sum'
             } else {
@@ -276,112 +264,72 @@ export class Visual implements IVisual {
 
             this.button.onclick = () => {
                 console.log(this.api.getColumnState());
-                let contentXlsx: string ;
-                const paginationPageSize = this.gridOptions.paginationPageSize; // Replace with your actual pagination settings
-                const currentPage = this.api.paginationGetCurrentPage(); // Get the current active page
-                const startRow = currentPage * paginationPageSize;
-                const endRow = Math.min(startRow + paginationPageSize, this.api.getDisplayedRowCount());
 
-                console.log(paginationPageSize, currentPage, startRow, endRow)
+                // Get selected rows, or all displayed rows if none selected
+                const selectedNodes = this.api.getSelectedNodes();
+                let dataToExport = [];
 
-                const displayedData = [];
-                for (let i = startRow; i < endRow; i++) {
-                    const rowNode = this.api.getDisplayedRowAtIndex(i);
-                    displayedData.push(rowNode.data);
-                }
-                
-                const jsonData1: string = JSON.stringify(displayedData);
-
-                const jsonData2: any[] = JSON.parse(jsonData1);
-                console.log("json data", jsonData2)
-
-                const extractedValues = jsonData2.map(item => ({
-                    IMPORTER_NAME: item.importer_name,
-                    SUPPLIER_NAME: item.supplier_name,
-                    HS_CODE: item.hs_code,
-                    ORIGIN_COUNTRY: item.origin_country,
-                    PORT_OF_SHIPMENT: item.port_of_shipment,
-                    FOREIGN_PORT :item.foreign_port,
-                    INDIAN_PORT: item.indian_port,
-                    TOTAL_ASSESS_USD: item.total_assess_usd,
-                    STD_QUANTITY: item.std_quantity,
-                    EXPORTER_NAME :item.exporter_name,
-                    BUYER_NAME : item.buyer_name,
-                    PERCENTAGE_OF_FOB_USD: item.fob_percentage,
-                    PERCENTAGE_OF_STD_QUANTITY:item.std_quantity_percentage,
-                    FOB_USD:item.fob_usd,
-                    IEC:item.iec,
-                    UNIT_PRICE_USD:item.unit_price_usd,
-                    TOTAL_ASSESS_USD_PERCENTAGE:item.total_assess_usd_percentage
-                }));
-
-                interface ImportData {
-                    "IMPORTER_NAME" : string,
-                    "SUPPLIER_NAME" : string,
-                    "HS_CODE"       : string,
-                    "ORIGIN_COUNTRY" :string,
-                    "PORT_OF_SHIPMENT":string,
-                    "INDIAN_PORT": string,
-                    "TOTAL_ASSESS_USD": number,
-                    "STD_QUANTITY": number,
-                    "EXPORTER_NAME": string,
-                    "BUYER_NAME":string,
-                    "PERCENTAGE_OF_FOB_USD":number,
-                    "PERCENTAGE_OF_STD_QUANTITY": number,
-                    "FOB_USD":number,
-                    "FOREIGN_PORT":string,
-                    "UNIT_PRICE_USD":number,
-                    "IEC":number,
-                    "TOTAL_ASSESS_USD_PERCENTAGE":number
-                }
-                const jsonData: ImportData[] = [];
-
-                for(let i = 0; i< extractedValues.length ;i++ ){
-                const entry: ImportData = 
-                    {
-                        HS_CODE: extractedValues[i]?.HS_CODE,
-                        IMPORTER_NAME: extractedValues[i]?.IMPORTER_NAME ,
-                        INDIAN_PORT: extractedValues[i]?.INDIAN_PORT ,
-                        FOREIGN_PORT:extractedValues[i]?.FOREIGN_PORT,
-                        ORIGIN_COUNTRY: extractedValues[i]?.ORIGIN_COUNTRY ,
-                        PORT_OF_SHIPMENT: extractedValues[i]?.PORT_OF_SHIPMENT ,
-                        STD_QUANTITY: extractedValues[i]?.STD_QUANTITY ,
-                        SUPPLIER_NAME: extractedValues[i]?.SUPPLIER_NAME ,
-                        TOTAL_ASSESS_USD: extractedValues[i]?.TOTAL_ASSESS_USD,
-                        EXPORTER_NAME:extractedValues[i]?.EXPORTER_NAME,
-                        BUYER_NAME:extractedValues[i]?.BUYER_NAME,
-                        PERCENTAGE_OF_FOB_USD:extractedValues[i]?.PERCENTAGE_OF_FOB_USD,
-                        FOB_USD:extractedValues[i]?.FOB_USD,
-                        PERCENTAGE_OF_STD_QUANTITY:extractedValues[i]?.PERCENTAGE_OF_STD_QUANTITY,
-                        IEC:extractedValues[i]?.IEC,
-                        UNIT_PRICE_USD:extractedValues[i]?.UNIT_PRICE_USD,
-                        TOTAL_ASSESS_USD_PERCENTAGE:extractedValues[i]?.TOTAL_ASSESS_USD_PERCENTAGE
+                if (selectedNodes.length > 0) {
+                    // Export selected rows
+                    dataToExport = selectedNodes.map(node => node.data);
+                } else {
+                    // Export all displayed rows (filtered/sorted)
+                    const displayedRowCount = this.api.getDisplayedRowCount();
+                    for (let i = 0; i < displayedRowCount; i++) {
+                        const rowNode = this.api.getDisplayedRowAtIndex(i);
+                        if (rowNode) {
+                            dataToExport.push(rowNode.data);
+                        }
                     }
-                
-                jsonData.push(entry)
-            }
+                }
 
-            const jsonString = JSON.stringify(jsonData);
-            const requestBody = {
-                name: jsonString
-              };
+                // Limit to 1000 rows maximum
+                const MAX_ROWS = 1000;
+                if (dataToExport.length > MAX_ROWS) {
+                    console.warn(`Export limited to ${MAX_ROWS} rows. Total rows: ${dataToExport.length}`);
+                    dataToExport = dataToExport.slice(0, MAX_ROWS);
+                }
 
-            console.log(JSON.stringify(requestBody))
-            const downloadlink = `https://powerbidownload.azurewebsites.net/api/downloadlink`;
+                // Get column definitions to build the export data dynamically
+                const columnDefs = this.api.getColumnDefs();
 
-            fetch(downloadlink,{
-                method: 'POST',
-                // mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json'
-                  },
-                body: JSON.stringify(requestBody)
-            }).then(response => response.text())
-            .then(result => {
-                 const url = `https://powerbidownload.azurewebsites.net${result}`
-                 console.log(url)
-                 this.host.launchUrl(url)})
-            .catch(error => console.log('error', error));
+                // Transform data to use display names as keys (excluding checkbox column)
+                const exportData = dataToExport.map(rowData => {
+                    const exportRow = {};
+                    columnDefs.forEach(colDef => {
+                        // Type guard to ensure it's a ColDef (not ColGroupDef)
+                        if ('field' in colDef && colDef.field && colDef.field !== 'checkboxColumn' && colDef.headerName) {
+                            // Use headerName as key and get the value from the row data
+                            exportRow[colDef.headerName] = rowData[colDef.field];
+                        }
+                    });
+                    return exportRow;
+                });
+
+                console.log("Export data:", exportData);
+                console.log("Exporting", exportData.length, "rows");
+
+                const jsonString = JSON.stringify(exportData);
+                const requestBody = {
+                    name: jsonString
+                };
+
+                console.log(JSON.stringify(requestBody));
+                const downloadlink = `https://func-exim-powerbi-ci-prod.azurewebsites.net/api/downloadlink`;
+
+                fetch(downloadlink, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                }).then(response => response.text())
+                .then(result => {
+                    const url = `https://func-exim-powerbi-ci-prod.azurewebsites.net${result}`
+                    console.log(url)
+                    this.host.launchUrl(url)
+                })
+                .catch(error => console.log('error', error));
             }
         } else {
             this.api.setGridOption("columnDefs",columnDefs);
