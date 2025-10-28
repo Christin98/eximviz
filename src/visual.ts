@@ -175,6 +175,7 @@ export class Visual implements IVisual {
         const numberFormatter = (params) => { return '' + formatNumber(params.value)}
         const stringFormatter = (params) => { return formatString(params.value)}
         const percentageFormatter = (params) => { return formatPercentage(params.value) + "%"}
+        const dateFormatter = (params) => { return formatDate(params.value)}
 
 
         const formatString = (string) => {
@@ -196,14 +197,37 @@ export class Visual implements IVisual {
             return Number(number).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
         }
 
-        const formatPercentage = (number) => { 
+        const formatPercentage = (number) => {
             console.log(number)
             if (number === undefined || number === null) {
                 return 0;
             }
-        
+
             // Add commas and round to 2 decimal places
             return Number(number).toFixed(4);
+        }
+
+        const formatDate = (date) => {
+            console.log(date)
+            if (date === undefined || date === null) {
+                return "NULL";
+            }
+
+            // Convert to Date object if it's not already
+            const dateObj = date instanceof Date ? date : new Date(date);
+
+            // Check if valid date
+            if (isNaN(dateObj.getTime())) {
+                return "NULL";
+            }
+
+            // Format as "Aug 2025"
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const month = monthNames[dateObj.getMonth()];
+            const year = dateObj.getFullYear();
+
+            return `${month} ${year}`;
         }
 
            const columnDefs = dataView.table.columns.map((c, index) => {
@@ -212,7 +236,20 @@ export class Visual implements IVisual {
                 field: c.displayName.replace(/\s/g, '').toLowerCase(),
             } as ColDef;
 
-            if(c.isMeasure) {
+            // Check if column is a date type
+            const isDateColumn = c.type?.dateTime || c.type?.temporal ||
+                                c.displayName.toLowerCase().includes('date') ||
+                                c.displayName.toLowerCase().includes('month') ||
+                                c.displayName.toLowerCase().includes('year');
+
+            if(isDateColumn) {
+                console.log("Date column detected:", c.displayName);
+                columnDef.valueFormatter = dateFormatter;
+                columnDef.cellDataType = 'text';
+                columnDef.enableRowGroup = true;
+                columnDef.enablePivot = false;
+                columnDef.enableValue = false;
+            } else if(c.isMeasure) {
                 console.log("True");
                 if(c.displayName.includes("usd") || c.displayName.includes("USD")|| c.displayName.includes("duty") || c.displayName.includes("DUTY"))
                     columnDef.valueFormatter = currencyFormatter;
